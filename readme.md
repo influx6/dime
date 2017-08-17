@@ -55,7 +55,7 @@ type ByteService interface {
 ```
 
 ## A Dime Service Adapter
-A adapter in Dime, is simply any function that can take a channel of a type and return a channel of another type, where by it does certain transformation within to produce such a conversion. As an example the [BoolService](./services/bool_service.go) adapters.
+An adapter in Dime, is simply any function that can take a channel of a type and return a channel of another type, where by it does certain transformation within to produce such a conversion. As an example the [BoolService](./services/bool_service.go) adapters.
 
 
 ```go
