@@ -18,12 +18,12 @@ type UInt8ServiceToByteAdapter func(chan uint8) chan []byte
 // @iface
 type UInt8Service interface {
 	// Receive will return a channel which will allow reading from the Service it till it is closed.
-	Receive(string) (chan uint8, error)
+	Receive(string) (<-chan uint8, error)
 
 	// Send will take the a channel, which will be written into the Service for it's internal processing
-	// and the Service will continue to read form the channel till it is closed.
+	// and the Service will continue to read form the channel till the channel is closed.
 	// Useful for collating/collecting services.
-	Send(string, chan uint8) error
+	Send(string, chan<- uint8) error
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.

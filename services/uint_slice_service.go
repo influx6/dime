@@ -18,12 +18,12 @@ type UIntSliceServiceToByteAdapter func(chan []uint) chan []byte
 // @iface
 type UIntSliceService interface {
 	// Receive will return a channel which will allow reading from the Service it till it is closed.
-	Receive(string) (chan []uint, error)
+	Receive(string) (<-chan []uint, error)
 
 	// Send will take the a channel, which will be written into the Service for it's internal processing
-	// and the Service will continue to read form the channel till it is closed.
+	// and the Service will continue to read form the channel till the channel is closed.
 	// Useful for collating/collecting services.
-	Send(string, chan []uint) error
+	Send(string, chan<- []uint) error
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
