@@ -62,3 +62,6 @@ type BoolFromByteAdapter func(context.Context, chan []byte) chan bool
 // BoolToByteAdapter defines a function that that will take a channel of bytes and return a channel of bool.
 type BoolToByteAdapter func(context.Context, chan bool) chan []byte
 ```
+
+## Service Interfaces
+Dime contains generated code for all base types supported by go for usage outside of the package in [Services](./services) directory.
