@@ -847,21 +847,20 @@ func (d *ByteDistributor) manage() {
 // Auto-Generated using the moz code-generator https://github.com/influx6/moz.
 // @iface
 type MonoByteService interface {
-	// Send will return a channel which will allow reading from the Service it till it is closed.
-	Send() (<-chan byte, error)
+	// Read will return a channel which will allow reading from the Service until it it is closed.
+	Read() (<-chan byte, error)
 
-	// Receive will take the channel, which will be written into the Service for it's internal processing
+	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
+	ReadErrors() (<-chan error, error)
+
+	// Receive will take the channel, which will be writing into the Service for it's internal processing
 	// and the Service will continue to read form the channel till the channel is closed.
 	// Useful for collating/collecting services.
-	Receive(<-chan byte) error
+	Write(<-chan byte) error
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
 	Done() chan struct{}
-
-	// Errors returns a channel which signals services to know whether the Service is still servicing
-	// request.
-	Errors() chan error
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.
@@ -874,21 +873,20 @@ type MonoByteService interface {
 // Auto-Generated using the moz code-generator https://github.com/influx6/moz.
 // @iface
 type ByteService interface {
-	// Send will return a channel which will allow reading from the Service it till it is closed.
-	Send(string) (<-chan byte, error)
+	// Read will return a channel which will allow reading from the Service until it it is closed.
+	Read(string) (<-chan byte, error)
 
-	// Receive will take the channel, which will be written into the Service for it's internal processing
+	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
+	ReadErrors() (<-chan error, error)
+
+	// Receive will take the channel, which will be writing into the Service for it's internal processing
 	// and the Service will continue to read form the channel till the channel is closed.
 	// Useful for collating/collecting services.
-	Receive(string, <-chan byte) error
+	Write(string, <-chan byte) error
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
 	Done() chan struct{}
-
-	// Errors returns a channel which signals services to know whether the Service is still servicing
-	// request.
-	Errors() chan error
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.
