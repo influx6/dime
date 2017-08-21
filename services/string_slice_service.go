@@ -853,11 +853,11 @@ func (d *StringSliceDistributor) manage() {
 // Auto-Generated using the moz code-generator https://github.com/influx6/moz.
 // @iface
 type MonoStringSliceService interface {
+	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
+	ReadErrors() <-chan error
+
 	// Read will return a channel which will allow reading from the Service until it it is closed.
 	Read() (<-chan []string, error)
-
-	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
-	ReadErrors() (<-chan error, error)
 
 	// Receive will take the channel, which will be writing into the Service for it's internal processing
 	// and the Service will continue to read form the channel till the channel is closed.
@@ -879,11 +879,11 @@ type MonoStringSliceService interface {
 // Auto-Generated using the moz code-generator https://github.com/influx6/moz.
 // @iface
 type StringSliceService interface {
+	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
+	ReadErrors() <-chan error
+
 	// Read will return a channel which will allow reading from the Service until it it is closed.
 	Read(string) (<-chan []string, error)
-
-	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
-	ReadErrors() (<-chan error, error)
 
 	// Receive will take the channel, which will be writing into the Service for it's internal processing
 	// and the Service will continue to read form the channel till the channel is closed.

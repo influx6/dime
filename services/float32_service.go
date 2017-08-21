@@ -853,11 +853,11 @@ func (d *Float32Distributor) manage() {
 // Auto-Generated using the moz code-generator https://github.com/influx6/moz.
 // @iface
 type MonoFloat32Service interface {
+	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
+	ReadErrors() <-chan error
+
 	// Read will return a channel which will allow reading from the Service until it it is closed.
 	Read() (<-chan float32, error)
-
-	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
-	ReadErrors() (<-chan error, error)
 
 	// Receive will take the channel, which will be writing into the Service for it's internal processing
 	// and the Service will continue to read form the channel till the channel is closed.
@@ -879,11 +879,11 @@ type MonoFloat32Service interface {
 // Auto-Generated using the moz code-generator https://github.com/influx6/moz.
 // @iface
 type Float32Service interface {
+	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
+	ReadErrors() <-chan error
+
 	// Read will return a channel which will allow reading from the Service until it it is closed.
 	Read(string) (<-chan float32, error)
-
-	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
-	ReadErrors() (<-chan error, error)
 
 	// Receive will take the channel, which will be writing into the Service for it's internal processing
 	// and the Service will continue to read form the channel till the channel is closed.

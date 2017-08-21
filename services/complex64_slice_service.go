@@ -853,11 +853,11 @@ func (d *Complex64SliceDistributor) manage() {
 // Auto-Generated using the moz code-generator https://github.com/influx6/moz.
 // @iface
 type MonoComplex64SliceService interface {
+	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
+	ReadErrors() <-chan error
+
 	// Read will return a channel which will allow reading from the Service until it it is closed.
 	Read() (<-chan complex64, error)
-
-	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
-	ReadErrors() (<-chan error, error)
 
 	// Receive will take the channel, which will be writing into the Service for it's internal processing
 	// and the Service will continue to read form the channel till the channel is closed.
@@ -879,11 +879,11 @@ type MonoComplex64SliceService interface {
 // Auto-Generated using the moz code-generator https://github.com/influx6/moz.
 // @iface
 type Complex64SliceService interface {
+	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
+	ReadErrors() <-chan error
+
 	// Read will return a channel which will allow reading from the Service until it it is closed.
 	Read(string) (<-chan complex64, error)
-
-	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
-	ReadErrors() (<-chan error, error)
 
 	// Receive will take the channel, which will be writing into the Service for it's internal processing
 	// and the Service will continue to read form the channel till the channel is closed.

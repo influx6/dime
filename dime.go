@@ -30,7 +30,7 @@
 
 	// {{sel "Name"}}PartialCollect defines a function which returns a channel where the items of the incoming channel
 	// are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
-  // This function does not guarantee complete data.
+  // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
 	func {{sel "Name"}}PartialCollect(ctx context.Context, waitTime time.Duration, in chan {{ sel "Type" }}) chan []{{sel "Type"}} {
   	res := make(chan []{{sel "Type"}}, 0)
 
@@ -864,11 +864,11 @@
 	// Auto-Generated using the moz code-generator https://github.com/influx6/moz.
 	// @iface
  	type Mono{{ sel "Name" }}Service interface {
+		// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
+		ReadErrors() <-chan error
+
 		// Read will return a channel which will allow reading from the Service until it it is closed.
 		Read() (<-chan {{ sel "Type"}}, error)
-
-		// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
-		ReadErrors() (<-chan error, error)
 
 		// Receive will take the channel, which will be writing into the Service for it's internal processing
 		// and the Service will continue to read form the channel till the channel is closed.
@@ -890,11 +890,11 @@
 	// Auto-Generated using the moz code-generator https://github.com/influx6/moz.
 	// @iface
  	type {{ sel "Name" }}Service interface {
+		// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
+		ReadErrors() <-chan error
+
 		// Read will return a channel which will allow reading from the Service until it it is closed.
 		Read(string) (<-chan {{ sel "Type"}}, error)
-
-		// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
-		ReadErrors() (<-chan error, error)
 
 		// Receive will take the channel, which will be writing into the Service for it's internal processing
 		// and the Service will continue to read form the channel till the channel is closed.
