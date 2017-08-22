@@ -19,7 +19,7 @@ type IntToByteAdapter func(context.Context, chan int) chan []byte
 
 // IntPartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
-// This function does not guarantee complete data.
+// This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
 func IntPartialCollect(ctx context.Context, waitTime time.Duration, in chan int) chan []int {
 	res := make(chan []int, 0)
 
@@ -191,7 +191,7 @@ func IntCollectUntil(ctx context.Context, waitTime time.Duration, condition func
 				buffer = append(buffer, data)
 
 				// If we do not match the given criteria, then continue buffering.
-				if condition(buffer) {
+				if !condition(buffer) {
 					continue
 				}
 
@@ -236,26 +236,32 @@ func IntMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, sender
 		var index int
 
 		total := len(senders)
-		filled := make(map[int]int, 0)
+		filled := make(map[int]bool, 0)
+		filledContent := make(map[int]int, 0)
 
 		for {
-			// if the current index has being filled, shift forward and reattempt loop.
-			if _, ok := filled[index]; ok {
-				index++
-				continue
-			}
-
 			if len(filled) == total {
 				var content []int
 
-				for _, item := range filled {
+				for _, item := range filledContent {
 					content = append(content, item)
 				}
 
 				res <- content
 
 				index = 0
-				filled = make(map[int]int, 0)
+				filled = make(map[int]bool, 0)
+			}
+
+			// if the current index has being filled, shift forward and reattempt loop.
+			if ok := filled[index]; ok {
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
+				continue
 			}
 
 			timer := time.NewTimer(maxWaitTime)
@@ -266,7 +272,7 @@ func IntMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, sender
 				timer.Stop()
 				return
 			case <-timer.C:
-				switch index >= total {
+				switch index >= total-1 {
 				case true:
 					index = 0
 				case false:
@@ -279,8 +285,15 @@ func IntMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, sender
 					return
 				}
 
-				filled[index] = data
-				index++
+				filled[index] = true
+				filledContent[index] = data
+
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
 			}
 
 			timer.Stop()
@@ -318,27 +331,33 @@ func IntMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...
 		var index int
 
 		total := len(senders)
-		filled := make(map[int]int, 0)
+		filled := make(map[int]bool, 0)
+		filledContent := make(map[int]int, 0)
 
 		for {
-			// if the current index has being filled, shift forward and reattempt loop.
-			if _, ok := filled[index]; ok {
-				index++
-				continue
-			}
-
 			if len(filled) == total {
 				var content []int
 
 				for index := range senders {
-					item := filled[index]
+					item := filledContent[index]
 					content = append(content, item)
 				}
 
 				res <- content
 
 				index = 0
-				filled = make(map[int]int, 0)
+				filled = make(map[int]bool, 0)
+			}
+
+			// if the current index has being filled, shift forward and reattempt loop.
+			if ok := filled[index]; ok {
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
+				continue
 			}
 
 			timer := time.NewTimer(maxWaitTime)
@@ -349,7 +368,7 @@ func IntMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...
 				timer.Stop()
 				return
 			case <-timer.C:
-				switch index >= total {
+				switch index >= total-1 {
 				case true:
 					index = 0
 				case false:
@@ -362,8 +381,15 @@ func IntMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...
 					return
 				}
 
-				filled[index] = data
-				index++
+				filled[index] = true
+				filledContent[index] = data
+
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
 			}
 
 			timer.Stop()
@@ -409,10 +435,9 @@ func IntCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Durat
 		var sendersClosed int
 
 		for {
-			// if the current index has being filled, shift forward and re-attempt loop.
-			if filled[index] || closed[index] {
-				index++
-				continue
+			if sendersClosed >= total {
+				res <- content
+				return
 			}
 
 			if len(content) == total {
@@ -423,6 +448,17 @@ func IntCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Durat
 				content = make([]int, len(senders))
 			}
 
+			// if the current index has being filled, shift forward and re-attempt loop.
+			if filled[index] || closed[index] {
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
+				continue
+			}
+
 			timer := time.NewTimer(maxItemWait)
 
 			select {
@@ -431,7 +467,7 @@ func IntCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Durat
 				timer.Stop()
 				return
 			case <-timer.C:
-				switch index >= total {
+				switch index >= total-1 {
 				case true:
 					index = 0
 				case false:
@@ -448,7 +484,13 @@ func IntCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Durat
 
 				content = append(content, data)
 				filled[index] = true
-				index++
+
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
 			}
 
 			timer.Stop()
@@ -492,17 +534,22 @@ func IntCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, send
 		filled := make(map[int]bool, 0)
 
 		for {
-			// if the current index has being filled, shift forward and reattempt loop.
-			if filled[index] {
-				index++
-				continue
-			}
-
 			if len(content) == total {
 				res <- content
 				index = 0
 				filled = make(map[int]bool, 0)
 				content = make([]int, len(senders))
+			}
+
+			// if the current index has being filled, shift forward and reattempt loop.
+			if filled[index] {
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
+				continue
 			}
 
 			timer := time.NewTimer(maxItemWait)
@@ -513,7 +560,7 @@ func IntCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, send
 				timer.Stop()
 				return
 			case <-timer.C:
-				switch index >= total {
+				switch index >= total-1 {
 				case true:
 					index = 0
 				case false:
@@ -528,7 +575,13 @@ func IntCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, send
 
 				content = append(content, data)
 				filled[index] = true
-				index++
+
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
 			}
 
 			timer.Stop()
@@ -575,12 +628,6 @@ func IntCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, se
 		var sendersClosed int
 
 		for {
-			// if the current index has being filled, shift forward and reattempt loop.
-			if filled[index] || closed[index] {
-				index++
-				continue
-			}
-
 			if sendersClosed >= total {
 				res <- content
 				return
@@ -593,6 +640,17 @@ func IntCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, se
 				content = make([]int, len(senders))
 			}
 
+			// if the current index has being filled, shift forward and reattempt loop.
+			if filled[index] || closed[index] {
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
+				continue
+			}
+
 			timer := time.NewTimer(maxItemWait)
 
 			select {
@@ -601,7 +659,7 @@ func IntCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, se
 				timer.Stop()
 				return
 			case <-timer.C:
-				switch index >= total {
+				switch index >= total-1 {
 				case true:
 					index = 0
 				case false:
@@ -618,7 +676,13 @@ func IntCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, se
 
 				content[index] = data
 				filled[index] = true
-				index++
+
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
 			}
 
 			timer.Stop()
@@ -664,17 +728,22 @@ func IntCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders .
 		filled := make(map[int]bool, 0)
 
 		for {
-			// if the current index has being filled, shift forward and reattempt loop.
-			if filled[index] {
-				index++
-				continue
-			}
-
 			if len(filled) == total {
 				res <- content
 				index = 0
 				filled = make(map[int]bool, 0)
 				content = make([]int, len(senders))
+			}
+
+			// if the current index has being filled, shift forward and reattempt loop.
+			if filled[index] {
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
+				continue
 			}
 
 			timer := time.NewTimer(maxItemWait)
@@ -685,7 +754,7 @@ func IntCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders .
 				timer.Stop()
 				return
 			case <-timer.C:
-				switch index >= total {
+				switch index >= total-1 {
 				case true:
 					index = 0
 				case false:
@@ -700,7 +769,13 @@ func IntCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders .
 
 				content[index] = data
 				filled[index] = true
-				index++
+
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
 			}
 
 			timer.Stop()

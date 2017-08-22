@@ -19,7 +19,7 @@ type UInt8SliceToByteAdapter func(context.Context, chan []uint8) chan []byte
 
 // UInt8SlicePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
-// This function does not guarantee complete data.
+// This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
 func UInt8SlicePartialCollect(ctx context.Context, waitTime time.Duration, in chan []uint8) chan [][]uint8 {
 	res := make(chan [][]uint8, 0)
 
@@ -191,7 +191,7 @@ func UInt8SliceCollectUntil(ctx context.Context, waitTime time.Duration, conditi
 				buffer = append(buffer, data)
 
 				// If we do not match the given criteria, then continue buffering.
-				if condition(buffer) {
+				if !condition(buffer) {
 					continue
 				}
 
@@ -236,26 +236,32 @@ func UInt8SliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration,
 		var index int
 
 		total := len(senders)
-		filled := make(map[int][]uint8, 0)
+		filled := make(map[int]bool, 0)
+		filledContent := make(map[int][]uint8, 0)
 
 		for {
-			// if the current index has being filled, shift forward and reattempt loop.
-			if _, ok := filled[index]; ok {
-				index++
-				continue
-			}
-
 			if len(filled) == total {
 				var content []uint8
 
-				for _, item := range filled {
+				for _, item := range filledContent {
 					content = append(content, item...)
 				}
 
 				res <- content
 
 				index = 0
-				filled = make(map[int][]uint8, 0)
+				filled = make(map[int]bool, 0)
+			}
+
+			// if the current index has being filled, shift forward and reattempt loop.
+			if ok := filled[index]; ok {
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
+				continue
 			}
 
 			timer := time.NewTimer(maxWaitTime)
@@ -266,7 +272,7 @@ func UInt8SliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration,
 				timer.Stop()
 				return
 			case <-timer.C:
-				switch index >= total {
+				switch index >= total-1 {
 				case true:
 					index = 0
 				case false:
@@ -279,8 +285,15 @@ func UInt8SliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration,
 					return
 				}
 
-				filled[index] = data
-				index++
+				filled[index] = true
+				filledContent[index] = data
+
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
 			}
 
 			timer.Stop()
@@ -318,27 +331,33 @@ func UInt8SliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, send
 		var index int
 
 		total := len(senders)
-		filled := make(map[int][]uint8, 0)
+		filled := make(map[int]bool, 0)
+		filledContent := make(map[int][]uint8, 0)
 
 		for {
-			// if the current index has being filled, shift forward and reattempt loop.
-			if _, ok := filled[index]; ok {
-				index++
-				continue
-			}
-
 			if len(filled) == total {
 				var content []uint8
 
 				for index := range senders {
-					item := filled[index]
+					item := filledContent[index]
 					content = append(content, item...)
 				}
 
 				res <- content
 
 				index = 0
-				filled = make(map[int][]uint8, 0)
+				filled = make(map[int]bool, 0)
+			}
+
+			// if the current index has being filled, shift forward and reattempt loop.
+			if ok := filled[index]; ok {
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
+				continue
 			}
 
 			timer := time.NewTimer(maxWaitTime)
@@ -349,7 +368,7 @@ func UInt8SliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, send
 				timer.Stop()
 				return
 			case <-timer.C:
-				switch index >= total {
+				switch index >= total-1 {
 				case true:
 					index = 0
 				case false:
@@ -362,8 +381,15 @@ func UInt8SliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, send
 					return
 				}
 
-				filled[index] = data
-				index++
+				filled[index] = true
+				filledContent[index] = data
+
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
 			}
 
 			timer.Stop()
@@ -409,10 +435,9 @@ func UInt8SliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait tim
 		var sendersClosed int
 
 		for {
-			// if the current index has being filled, shift forward and re-attempt loop.
-			if filled[index] || closed[index] {
-				index++
-				continue
+			if sendersClosed >= total {
+				res <- content
+				return
 			}
 
 			if len(content) == total {
@@ -423,6 +448,17 @@ func UInt8SliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait tim
 				content = make([][]uint8, len(senders))
 			}
 
+			// if the current index has being filled, shift forward and re-attempt loop.
+			if filled[index] || closed[index] {
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
+				continue
+			}
+
 			timer := time.NewTimer(maxItemWait)
 
 			select {
@@ -431,7 +467,7 @@ func UInt8SliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait tim
 				timer.Stop()
 				return
 			case <-timer.C:
-				switch index >= total {
+				switch index >= total-1 {
 				case true:
 					index = 0
 				case false:
@@ -448,7 +484,13 @@ func UInt8SliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait tim
 
 				content = append(content, data)
 				filled[index] = true
-				index++
+
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
 			}
 
 			timer.Stop()
@@ -492,17 +534,22 @@ func UInt8SliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duratio
 		filled := make(map[int]bool, 0)
 
 		for {
-			// if the current index has being filled, shift forward and reattempt loop.
-			if filled[index] {
-				index++
-				continue
-			}
-
 			if len(content) == total {
 				res <- content
 				index = 0
 				filled = make(map[int]bool, 0)
 				content = make([][]uint8, len(senders))
+			}
+
+			// if the current index has being filled, shift forward and reattempt loop.
+			if filled[index] {
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
+				continue
 			}
 
 			timer := time.NewTimer(maxItemWait)
@@ -513,7 +560,7 @@ func UInt8SliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duratio
 				timer.Stop()
 				return
 			case <-timer.C:
-				switch index >= total {
+				switch index >= total-1 {
 				case true:
 					index = 0
 				case false:
@@ -528,7 +575,13 @@ func UInt8SliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duratio
 
 				content = append(content, data)
 				filled[index] = true
-				index++
+
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
 			}
 
 			timer.Stop()
@@ -575,12 +628,6 @@ func UInt8SliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Durat
 		var sendersClosed int
 
 		for {
-			// if the current index has being filled, shift forward and reattempt loop.
-			if filled[index] || closed[index] {
-				index++
-				continue
-			}
-
 			if sendersClosed >= total {
 				res <- content
 				return
@@ -593,6 +640,17 @@ func UInt8SliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Durat
 				content = make([][]uint8, len(senders))
 			}
 
+			// if the current index has being filled, shift forward and reattempt loop.
+			if filled[index] || closed[index] {
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
+				continue
+			}
+
 			timer := time.NewTimer(maxItemWait)
 
 			select {
@@ -601,7 +659,7 @@ func UInt8SliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Durat
 				timer.Stop()
 				return
 			case <-timer.C:
-				switch index >= total {
+				switch index >= total-1 {
 				case true:
 					index = 0
 				case false:
@@ -618,7 +676,13 @@ func UInt8SliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Durat
 
 				content[index] = data
 				filled[index] = true
-				index++
+
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
 			}
 
 			timer.Stop()
@@ -664,17 +728,22 @@ func UInt8SliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, se
 		filled := make(map[int]bool, 0)
 
 		for {
-			// if the current index has being filled, shift forward and reattempt loop.
-			if filled[index] {
-				index++
-				continue
-			}
-
 			if len(filled) == total {
 				res <- content
 				index = 0
 				filled = make(map[int]bool, 0)
 				content = make([][]uint8, len(senders))
+			}
+
+			// if the current index has being filled, shift forward and reattempt loop.
+			if filled[index] {
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
+				continue
 			}
 
 			timer := time.NewTimer(maxItemWait)
@@ -685,7 +754,7 @@ func UInt8SliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, se
 				timer.Stop()
 				return
 			case <-timer.C:
-				switch index >= total {
+				switch index >= total-1 {
 				case true:
 					index = 0
 				case false:
@@ -700,7 +769,13 @@ func UInt8SliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, se
 
 				content[index] = data
 				filled[index] = true
-				index++
+
+				switch index >= total-1 {
+				case true:
+					index = 0
+				case false:
+					index++
+				}
 			}
 
 			timer.Stop()

@@ -202,7 +202,7 @@
 					buffer = append(buffer, data)
 
           // If we do not match the given criteria, then continue buffering.
-          if condition(buffer) {
+          if !condition(buffer) {
             continue
           }
 
@@ -247,26 +247,32 @@
   		var index int
 
   		total := len(senders)
-  		filled := make(map[int]{{ sel "Type" }}, 0)
+  		filled := make(map[int]bool, 0)
+  		filledContent := make(map[int]{{ sel "Type"}}, 0)
 
   		for {
-  			// if the current index has being filled, shift forward and reattempt loop.
-  			if _, ok := filled[index]; ok {
-  				index++
-  				continue
-  			}
-
   			if len(filled) == total {
   				var content []{{ if hasPrefix (sel "Type") "[]" }} {{ (trimPrefix (sel "Type") "[]") }} {{ else }} {{ sel "Type" }} {{end}}
 
-  				for _, item := range filled {
+  				for _, item := range filledContent {
   					content = append(content, {{ if hasPrefix (sel "Type") "[]" }} item... {{ else }} item {{end}})
   				}
 
   				res <- content
 
   				index = 0
-  				filled = make(map[int]{{ sel "Type" }}, 0)
+      		filled = make(map[int]bool, 0)
+  			}
+
+  			// if the current index has being filled, shift forward and reattempt loop.
+  			if  ok := filled[index]; ok {
+  				switch index >= total-1 {
+  				case true:
+  					index = 0
+  				case false:
+  					index++
+  				}
+  				continue
   			}
 
   			timer := time.NewTimer(maxWaitTime)
@@ -277,7 +283,7 @@
   				timer.Stop()
   				return
   			case <-timer.C:
-  				switch index >= total {
+  				switch index >= total - 1 {
   				case true:
   					index = 0
   				case false:
@@ -290,8 +296,15 @@
   					return
   				}
 
-  				filled[index] = data
-  				index++
+  				filled[index] = true
+  				filledContent[index] = data
+
+  				switch index >= total-1 {
+  				case true:
+  					index = 0
+  				case false:
+  					index++
+  				}
   			}
 
   			timer.Stop()
@@ -329,27 +342,33 @@
   		var index int
 
   		total := len(senders)
-  		filled := make(map[int]{{ sel "Type" }}, 0)
+  		filled := make(map[int]bool, 0)
+  		filledContent := make(map[int]{{ sel "Type"}}, 0)
 
   		for {
-  			// if the current index has being filled, shift forward and reattempt loop.
-  			if _, ok := filled[index]; ok {
-  				index++
-  				continue
-  			}
-
   			if len(filled) == total {
   				var content []{{ if hasPrefix (sel "Type") "[]" }} {{ (trimPrefix (sel "Type") "[]") }} {{ else }} {{ sel "Type" }} {{end}}
 
   				for index := range senders {
-            item := filled[index]
+            item := filledContent[index]
   					content = append(content, {{ if hasPrefix (sel "Type") "[]" }} item... {{ else }} item {{end}})
   				}
 
   				res <- content
 
   				index = 0
-  				filled = make(map[int]{{ sel "Type" }}, 0)
+      		filled = make(map[int]bool, 0)
+  			}
+
+  			// if the current index has being filled, shift forward and reattempt loop.
+  			if  ok := filled[index]; ok {
+  				switch index >= total-1 {
+  				case true:
+  					index = 0
+  				case false:
+  					index++
+  				}
+  				continue
   			}
 
   			timer := time.NewTimer(maxWaitTime)
@@ -360,7 +379,7 @@
   				timer.Stop()
   				return
   			case <-timer.C:
-  				switch index >= total {
+  				switch index >= total - 1 {
   				case true:
   					index = 0
   				case false:
@@ -373,8 +392,15 @@
   					return
   				}
 
-  				filled[index] = data
-  				index++
+  				filled[index] = true
+  				filledContent[index] = data
+
+  				switch index >= total-1 {
+  				case true:
+  					index = 0
+  				case false:
+  					index++
+  				}
   			}
 
   			timer.Stop()
@@ -420,11 +446,10 @@
       var sendersClosed int
 
   		for {
-  			// if the current index has being filled, shift forward and re-attempt loop.
-  			if filled[index] || closed[index]{
-  				index++
-  				continue
-  			}
+        if sendersClosed >= total {
+  				res <- content
+          return
+        }
 
   			if len(content) == total {
   				res <- content
@@ -432,6 +457,17 @@
   				index = 0
   				filled = make(map[int]bool, 0)
   				content = make([]{{sel "Type"}}, len(senders))
+  			}
+
+  			// if the current index has being filled, shift forward and re-attempt loop.
+  			if filled[index] || closed[index]{
+  				switch index >= total-1 {
+  				case true:
+  					index = 0
+  				case false:
+  					index++
+  				}
+  				continue
   			}
 
   			timer := time.NewTimer(maxItemWait)
@@ -442,7 +478,7 @@
   				timer.Stop()
   				return
   			case <-timer.C:
-  				switch index >= total {
+  				switch index >= total - 1{
   				case true:
   					index = 0
   				case false:
@@ -459,7 +495,13 @@
 
   				content = append(content, data)
   				filled[index] = true
-  				index++
+
+  				switch index >= total-1 {
+  				case true:
+  					index = 0
+  				case false:
+  					index++
+  				}
   			}
 
   			timer.Stop()
@@ -503,17 +545,22 @@
   		filled := make(map[int]bool, 0)
 
   		for {
-  			// if the current index has being filled, shift forward and reattempt loop.
-  			if filled[index] {
-  				index++
-  				continue
-  			}
-
   			if len(content) == total {
   				res <- content
   				index = 0
   				filled = make(map[int]bool, 0)
   				content = make([]{{sel "Type"}}, len(senders))
+  			}
+
+  			// if the current index has being filled, shift forward and reattempt loop.
+  			if filled[index] {
+  				switch index >= total-1 {
+  				case true:
+  					index = 0
+  				case false:
+  					index++
+  				}
+  				continue
   			}
 
   			timer := time.NewTimer(maxItemWait)
@@ -524,7 +571,7 @@
   				timer.Stop()
   				return
   			case <-timer.C:
-  				switch index >= total {
+  				switch index >= total - 1 {
   				case true:
   					index = 0
   				case false:
@@ -539,7 +586,13 @@
 
   				content = append(content, data)
   				filled[index] = true
-  				index++
+
+  				switch index >= total-1 {
+  				case true:
+  					index = 0
+  				case false:
+  					index++
+  				}
   			}
 
   			timer.Stop()
@@ -586,12 +639,6 @@
       var sendersClosed int
 
   		for {
-  			// if the current index has being filled, shift forward and reattempt loop.
-  			if filled[index] || closed[index] {
-  				index++
-  				continue
-  			}
-
         if sendersClosed >= total {
   				res <- content
           return
@@ -604,6 +651,17 @@
   				content = make([]{{sel "Type"}}, len(senders))
   			}
 
+  			// if the current index has being filled, shift forward and reattempt loop.
+  			if filled[index] || closed[index] {
+  				switch index >= total-1 {
+  				case true:
+  					index = 0
+  				case false:
+  					index++
+  				}
+  				continue
+  			}
+
   			timer := time.NewTimer(maxItemWait)
 
   			select {
@@ -612,7 +670,7 @@
   				timer.Stop()
   				return
   			case <-timer.C:
-  				switch index >= total {
+  				switch index >= total - 1{
   				case true:
   					index = 0
   				case false:
@@ -629,7 +687,13 @@
 
   				content[index] = data
   				filled[index] = true
-  				index++
+
+  				switch index >= total-1 {
+  				case true:
+  					index = 0
+  				case false:
+  					index++
+  				}
   			}
 
   			timer.Stop()
@@ -675,18 +739,24 @@
   		filled := make(map[int]bool, 0)
 
   		for {
-  			// if the current index has being filled, shift forward and reattempt loop.
-  			if filled[index] {
-  				index++
-  				continue
-  			}
-
   			if len(filled) == total {
   				res <- content
   				index = 0
   				filled = make(map[int]bool, 0)
   				content = make([]{{sel "Type"}}, len(senders))
   			}
+
+  			// if the current index has being filled, shift forward and reattempt loop.
+  			if filled[index] {
+  				switch index >= total-1 {
+  				case true:
+  					index = 0
+  				case false:
+  					index++
+  				}
+  				continue
+  			}
+
 
   			timer := time.NewTimer(maxItemWait)
 
@@ -696,7 +766,7 @@
   				timer.Stop()
   				return
   			case <-timer.C:
-  				switch index >= total {
+  				switch index >= total - 1{
   				case true:
   					index = 0
   				case false:
@@ -711,7 +781,13 @@
 
   				content[index] = data
   				filled[index] = true
-  				index++
+
+  				switch index >= total-1 {
+  				case true:
+  					index = 0
+  				case false:
+  					index++
+  				}
   			}
 
   			timer.Stop()
