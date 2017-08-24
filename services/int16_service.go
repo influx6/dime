@@ -908,7 +908,7 @@ func (d *Int16Distributor) manage() {
 					defer tick.Stop()
 
 					select {
-					case sub <- message:
+					case c <- message:
 						return
 					case <-tick.C:
 						return

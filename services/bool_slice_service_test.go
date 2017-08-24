@@ -305,10 +305,10 @@ func TestBoolSliceCollectUntil(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan []bool, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolCollectUntil(ctx, 2*time.Millisecond, func(item []bool) bool { return true }, incoming)
+		outgoing := services.BoolSliceCollectUntil(ctx, 2*time.Millisecond, func(item [][]bool) bool { return true }, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -323,8 +323,8 @@ func TestBoolSliceCollectUntil(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
-		outgoing := services.BoolCollectUntil(ctx, 10*time.Millisecond, func(items []bool) bool {
+		incoming := make(chan []bool, 0)
+		outgoing := services.BoolSliceCollectUntil(ctx, 10*time.Millisecond, func(items [][]bool) bool {
 			return len(items) == 2
 		}, incoming)
 
@@ -332,7 +332,7 @@ func TestBoolSliceCollectUntil(t *testing.T) {
 			defer close(incoming)
 
 			for i := 3; i > 0; i-- {
-				incoming <- (i%2 == 0)
+				incoming <- []bool{(i%2 == 0)}
 			}
 		}()
 
@@ -363,10 +363,10 @@ func TestBoolSliceMergeWithoutOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan []bool, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolMergeWithoutOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.BoolSliceMergeWithoutOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -381,30 +381,30 @@ func TestBoolSliceMergeWithoutOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan []bool, 0)
 		defer close(incoming)
 
-		incoming2 := make(chan bool, 0)
+		incoming2 := make(chan []bool, 0)
 		defer close(incoming2)
 
-		incoming3 := make(chan bool, 0)
+		incoming3 := make(chan []bool, 0)
 		defer close(incoming3)
 
-		outgoing := services.BoolMergeWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.BoolSliceMergeWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			time.Sleep(3 * time.Millisecond)
-			incoming <- true
+			incoming <- []bool{true}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- false
+			incoming2 <- []bool{false}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- true
+			incoming3 <- []bool{true}
 		}()
 
 		received := <-outgoing
@@ -427,10 +427,10 @@ func TestBoolSliceMergeInOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan []bool, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolMergeInOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.BoolSliceMergeInOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -444,30 +444,30 @@ func TestBoolSliceMergeInOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan []bool, 0)
 		defer close(incoming)
 
-		incoming2 := make(chan bool, 0)
+		incoming2 := make(chan []bool, 0)
 		defer close(incoming2)
 
-		incoming3 := make(chan bool, 0)
+		incoming3 := make(chan []bool, 0)
 		defer close(incoming3)
 
-		outgoing := services.BoolMergeInOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.BoolSliceMergeInOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			time.Sleep(3 * time.Millisecond)
-			incoming <- true
+			incoming <- []bool{true}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- false
+			incoming2 <- []bool{false}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- true
+			incoming3 <- []bool{true}
 		}()
 
 		received := <-outgoing
@@ -490,10 +490,10 @@ func TestBoolSliceCombinePartiallyWithoutOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan []bool, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolCombinePartiallyWithoutOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.BoolSliceCombinePartiallyWithoutOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -507,30 +507,30 @@ func TestBoolSliceCombinePartiallyWithoutOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan []bool, 0)
 		defer close(incoming)
 
-		incoming2 := make(chan bool, 0)
+		incoming2 := make(chan []bool, 0)
 		defer close(incoming2)
 
-		incoming3 := make(chan bool, 0)
+		incoming3 := make(chan []bool, 0)
 		defer close(incoming3)
 
-		outgoing := services.BoolCombinePartiallyWithoutOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.BoolSliceCombinePartiallyWithoutOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			time.Sleep(3 * time.Millisecond)
-			incoming <- true
+			incoming <- []bool{true}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- false
+			incoming2 <- []bool{false}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- true
+			incoming3 <- []bool{true}
 		}()
 
 		received := <-outgoing
@@ -539,7 +539,7 @@ func TestBoolSliceCombinePartiallyWithoutOrder(t *testing.T) {
 		}
 		tests.Passed("Should have recieved 3 item slice")
 
-		if received[0] != true && received[1] != true && received[2] != false {
+		if received[0][0] != true && received[1][0] != true && received[2][0] != false {
 			tests.Failed("Should have recieved items in matching provided order")
 		}
 		tests.Passed("Should have recieved items in matching provided order")
@@ -553,10 +553,10 @@ func TestBoolSliceCombineWithoutOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan []bool, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolCombineWithoutOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.BoolSliceCombineWithoutOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -571,30 +571,30 @@ func TestBoolSliceCombineWithoutOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan []bool, 0)
 
-		incoming2 := make(chan bool, 0)
+		incoming2 := make(chan []bool, 0)
 
-		incoming3 := make(chan bool, 0)
+		incoming3 := make(chan []bool, 0)
 
-		outgoing := services.BoolCombineWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.BoolSliceCombineWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			defer close(incoming)
 			time.Sleep(3 * time.Millisecond)
-			incoming <- true
+			incoming <- []bool{true}
 		}()
 
 		go func() {
 			defer close(incoming2)
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- false
+			incoming2 <- []bool{false}
 		}()
 
 		go func() {
 			defer close(incoming3)
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- true
+			incoming3 <- []bool{true}
 		}()
 
 		received := <-outgoing
@@ -603,7 +603,7 @@ func TestBoolSliceCombineWithoutOrder(t *testing.T) {
 		}
 		tests.Passed("Should have recieved 3 item slice")
 
-		if received[0] != false && received[1] != true && received[2] != true {
+		if received[0][0] != false && received[1][0] != true && received[2][0] != true {
 			tests.Failed("Should have recieved items in matching time.sleep order")
 		}
 		tests.Passed("Should have recieved items in matching time.sleep order")
@@ -617,10 +617,10 @@ func TestBoolSliceCombineInOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan []bool, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolCombineInOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.BoolSliceCombineInOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -634,30 +634,30 @@ func TestBoolSliceCombineInOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan []bool, 0)
 		defer close(incoming)
 
-		incoming2 := make(chan bool, 0)
+		incoming2 := make(chan []bool, 0)
 		defer close(incoming2)
 
-		incoming3 := make(chan bool, 0)
+		incoming3 := make(chan []bool, 0)
 		defer close(incoming3)
 
-		outgoing := services.BoolCombineInOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.BoolSliceCombineInOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			time.Sleep(3 * time.Millisecond)
-			incoming <- true
+			incoming <- []bool{true}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- false
+			incoming2 <- []bool{false}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- true
+			incoming3 <- []bool{true}
 		}()
 
 		received := <-outgoing
@@ -666,7 +666,7 @@ func TestBoolSliceCombineInOrder(t *testing.T) {
 		}
 		tests.Passed("Should have recieved 3 item slice")
 
-		if received[0] != true && received[1] != true && received[2] != false {
+		if received[0][0] != true && received[1][0] != true && received[2][0] != false {
 			tests.Failed("Should have recieved items in matching provided order")
 		}
 		tests.Passed("Should have recieved items in matching provided order")
@@ -680,10 +680,10 @@ func TestBoolSliceCombineInPartialOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan []bool, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolCombineInPartialOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.BoolSliceCombineInPartialOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -697,31 +697,31 @@ func TestBoolSliceCombineInPartialOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan []bool, 0)
 
-		incoming2 := make(chan bool, 0)
+		incoming2 := make(chan []bool, 0)
 		defer close(incoming2)
 
-		incoming3 := make(chan bool, 0)
+		incoming3 := make(chan []bool, 0)
 		defer close(incoming3)
 
-		outgoing := services.BoolCombineInPartialOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.BoolSliceCombineInPartialOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			defer close(incoming)
 
 			time.Sleep(3 * time.Millisecond)
-			incoming <- true
+			incoming <- []bool{true}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- false
+			incoming2 <- []bool{false}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- true
+			incoming3 <- []bool{true}
 		}()
 
 		received := <-outgoing
@@ -730,9 +730,78 @@ func TestBoolSliceCombineInPartialOrder(t *testing.T) {
 		}
 		tests.Passed("Should have recieved 3 item slice")
 
-		if received[0] != true && received[1] != true && received[2] != false {
+		if received[0][0] != true && received[1][0] != true && received[2][0] != false {
 			tests.Failed("Should have recieved items in matching provided order")
 		}
 		tests.Passed("Should have recieved items in matching provided order")
 	}
+}
+
+func TestBoolSliceDistributor(t *testing.T) {
+	dist := services.NewBoolSliceDisributor(0, 1*time.Second)
+	dist.Start()
+
+	incoming := make(chan []bool, 1)
+	incoming2 := make(chan []bool, 1)
+	incoming3 := make(chan []bool, 1)
+
+	dist.Subscribe(incoming)
+	dist.Subscribe(incoming2)
+	dist.Subscribe(incoming3)
+
+	dist.Publish([]bool{true, false, true})
+
+	select {
+	case <-time.After(15 * time.Millisecond):
+		tests.Failed("Should have received a published item before expiration")
+	case initial := <-incoming:
+		tests.Passed("Should have received a matching data on first channel")
+
+		if !isEqualSlice(initial, <-incoming2) {
+			tests.Failed("Should have received a matching data on second channel")
+		}
+		tests.Passed("Should have received a matching data on second channel")
+
+		if !isEqualSlice(initial, <-incoming3) {
+			tests.Failed("Should have received a matching data on third channel")
+		}
+		tests.Passed("Should have received a matching data on third channel")
+	}
+
+	dist.Stop()
+
+	dist.PublishDeadline([]bool{true, false, true}, 1*time.Millisecond)
+
+	if len(incoming) != 0 || len(incoming2) != 0 || len(incoming3) != 0 {
+		tests.Failed("Should not have received any items after publisher is stopped")
+	}
+	tests.Passed("Should not have received any items after publisher is stopped")
+}
+
+func isEqualSlice(item1 []bool, item2 []bool) bool {
+	if len(item1) != len(item2) {
+		return false
+	}
+
+	for index, item := range item1 {
+		if item2[index] != item {
+			return false
+		}
+	}
+
+	return true
+}
+
+func isEqualDoubleSlice(item1 [][]bool, item2 [][]bool) bool {
+	if len(item1) != len(item2) {
+		return false
+	}
+
+	for index, item := range item1 {
+		if !isEqualSlice(item, item2[index]) {
+			return false
+		}
+	}
+
+	return true
 }

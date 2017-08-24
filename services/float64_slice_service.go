@@ -908,7 +908,7 @@ func (d *Float64SliceDistributor) manage() {
 					defer tick.Stop()
 
 					select {
-					case sub <- message:
+					case c <- message:
 						return
 					case <-tick.C:
 						return

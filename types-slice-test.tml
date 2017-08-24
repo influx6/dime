@@ -1,5 +1,3 @@
-package services_test
-
 import (
 	"context"
 	"testing"
@@ -9,15 +7,15 @@ import (
 	"github.com/influx6/faux/tests"
 )
 
-func TestBoolCollect(t *testing.T) {
+func Test{{sel "Name"}}SliceCollect(t *testing.T) {
 	t.Logf("When all data is received before 3 second")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
-		outgoing := services.BoolCollect(ctx, 10*time.Millisecond, incoming)
+		incoming := make(chan {{sel "Type"}}, 0)
+		outgoing := services.{{sel "Name"}}SliceCollect(ctx, 10*time.Millisecond, incoming)
 
 		go func() {
 			defer close(incoming)
@@ -26,7 +24,7 @@ func TestBoolCollect(t *testing.T) {
 				select {
 				case <-ctx.Done():
 					return
-				case incoming <- (i%2 == 0):
+				case incoming <- {{sel "Type"}}{(i%2 == 0)}:
 					continue
 				}
 			}
@@ -50,15 +48,15 @@ func TestBoolCollect(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
-		outgoing := services.BoolCollect(ctx, 10*time.Millisecond, incoming)
+		incoming := make(chan {{sel "Type"}}, 0)
+		outgoing := services.{{sel "Name"}}SliceCollect(ctx, 10*time.Millisecond, incoming)
 
 		go func() {
 			for i := 20; i > 0; i-- {
 				select {
 				case <-ctx.Done():
 					return
-				case incoming <- (i%2 == 0):
+				case incoming <- {{sel "Type"}}{(i%2 == 0)}:
 					time.Sleep(50 * time.Millisecond)
 					continue
 				}
@@ -77,12 +75,12 @@ func TestBoolCollect(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
-		outgoing := services.BoolCollect(context.Background(), 10*time.Millisecond, incoming)
+		incoming := make(chan {{sel "Type"}}, 0)
+		outgoing := services.{{sel "Name"}}SliceCollect(context.Background(), 10*time.Millisecond, incoming)
 
 		go func() {
 			for i := 3; i > 0; i-- {
-				incoming <- (i%2 == 0)
+				incoming <- {{sel "Type"}}{(i%2 == 0)}
 			}
 		}()
 
@@ -95,22 +93,22 @@ func TestBoolCollect(t *testing.T) {
 	}
 }
 
-func TestBoolPartialCollect(t *testing.T) {
+func Test{{sel "Name"}}SlicePartialCollect(t *testing.T) {
 	t.Logf("When all data is received before 3 second")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
-		outgoing := services.BoolPartialCollect(ctx, 10*time.Millisecond, incoming)
+		incoming := make(chan {{sel "Type"}}, 0)
+		outgoing := services.{{sel "Name"}}SlicePartialCollect(ctx, 10*time.Millisecond, incoming)
 
 		go func() {
 			for i := 20; i > 0; i-- {
 				select {
 				case <-ctx.Done():
 					return
-				case incoming <- (i%2 == 0):
+				case incoming <- {{sel "Type"}}{(i%2 == 0)}:
 					continue
 				}
 			}
@@ -134,15 +132,15 @@ func TestBoolPartialCollect(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
-		outgoing := services.BoolPartialCollect(ctx, 10*time.Millisecond, incoming)
+		incoming := make(chan {{sel "Type"}}, 0)
+		outgoing := services.{{sel "Name"}}SlicePartialCollect(ctx, 10*time.Millisecond, incoming)
 
 		go func() {
 			for i := 20; i > 0; i-- {
 				select {
 				case <-ctx.Done():
 					return
-				case incoming <- (i%2 == 0):
+				case incoming <- {{sel "Type"}}{(i%2 == 0)}:
 					time.Sleep(60 * time.Millisecond)
 					continue
 				}
@@ -166,14 +164,14 @@ func TestBoolPartialCollect(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
-		outgoing := services.BoolPartialCollect(context.Background(), 10*time.Millisecond, incoming)
+		incoming := make(chan {{sel "Type"}}, 0)
+		outgoing := services.{{sel "Name"}}SlicePartialCollect(context.Background(), 10*time.Millisecond, incoming)
 
 		go func() {
 			defer close(incoming)
 
 			for i := 3; i > 0; i-- {
-				incoming <- (i%2 == 0)
+				incoming <- {{sel "Type"}}{(i%2 == 0)}
 			}
 		}()
 
@@ -194,17 +192,17 @@ func TestBoolPartialCollect(t *testing.T) {
 	}
 }
 
-func TestBoolMutate(t *testing.T) {
+func Test{{sel "Name"}}SliceMutate(t *testing.T) {
 	t.Logf("When data is mutated but not received due to context expiration on receive")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolMutate(ctx, 2*time.Millisecond, func(item bool) bool { return !item }, incoming)
+		outgoing := services.{{sel "Name"}}SliceMutate(ctx, 2*time.Millisecond, func(item {{sel "Type"}}) {{sel "Type"}} { return item }, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -219,28 +217,24 @@ func TestBoolMutate(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
-		outgoing := services.BoolMutate(ctx, 10*time.Millisecond, func(item bool) bool { return !item }, incoming)
+		incoming := make(chan {{sel "Type"}}, 0)
+		outgoing := services.{{sel "Name"}}SliceMutate(ctx, 10*time.Millisecond, func(item {{sel "Type"}}) {{sel "Type"}} {
+			return item[0:2]
+		}, incoming)
 
 		go func() {
 			defer close(incoming)
 
-			for i := 2; i > 0; i-- {
-				incoming <- (i%2 == 0)
+			for i := 1; i > 0; i-- {
+				incoming <- {{sel "Type"}}{(i%2 == 0), (i*2%2 == 0), (i*4%2 == 0)}
 			}
 		}()
 
 		received1 := <-outgoing
-		if received1 != false {
+		if len(received1) != 2 {
 			tests.Failed("Should have recieved false as value but got %t", received1)
 		}
 		tests.Passed("Should have recieved false as value")
-
-		received2 := <-outgoing
-		if received2 != true {
-			tests.Failed("Should have recieved true as value but got %t", received2)
-		}
-		tests.Passed("Should have recieved true as value")
 
 		_, ok := <-outgoing
 		if ok {
@@ -250,17 +244,17 @@ func TestBoolMutate(t *testing.T) {
 	}
 }
 
-func TestBoolFilter(t *testing.T) {
+func Test{{sel "Name"}}SliceFilter(t *testing.T) {
 	t.Logf("When data is filtered but not received due to context expiration on receive")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolFilter(ctx, 2*time.Millisecond, func(item bool) bool { return !item }, incoming)
+		outgoing := services.{{sel "Name"}}SliceFilter(ctx, 2*time.Millisecond, func(item {{sel "Type"}}) bool { return true }, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -275,22 +269,22 @@ func TestBoolFilter(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
-		outgoing := services.BoolFilter(ctx, 10*time.Millisecond, func(item bool) bool {
-			return item == false
+		incoming := make(chan {{sel "Type"}}, 0)
+		outgoing := services.{{sel "Name"}}SliceFilter(ctx, 10*time.Millisecond, func(item {{sel "Type"}}) bool {
+			return item[0] == false
 		}, incoming)
 
 		go func() {
 			defer close(incoming)
 
 			for i := 2; i > 0; i-- {
-				incoming <- (i%2 == 0)
+				incoming <- {{sel "Type"}}{(i%2 == 0)}
 			}
 		}()
 
 		received1 := <-outgoing
-		if received1 != false {
-			tests.Failed("Should have recieved false as value but got %t", received1)
+		if len(received1) != 1 {
+			tests.Failed("Should have recieved only 1 as value but got %t", received1)
 		}
 		tests.Passed("Should have recieved false as value")
 
@@ -302,17 +296,17 @@ func TestBoolFilter(t *testing.T) {
 	}
 }
 
-func TestBoolCollectUntil(t *testing.T) {
+func Test{{sel "Name"}}SliceCollectUntil(t *testing.T) {
 	t.Logf("When data is collected until condition is met except when context expiration on receive")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolCollectUntil(ctx, 2*time.Millisecond, func(item []bool) bool { return true }, incoming)
+		outgoing := services.{{sel "Name"}}SliceCollectUntil(ctx, 2*time.Millisecond, func(item []{{sel "Type"}}) bool { return true }, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -327,8 +321,8 @@ func TestBoolCollectUntil(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
-		outgoing := services.BoolCollectUntil(ctx, 10*time.Millisecond, func(items []bool) bool {
+		incoming := make(chan {{sel "Type"}}, 0)
+		outgoing := services.{{sel "Name"}}SliceCollectUntil(ctx, 10*time.Millisecond, func(items []{{sel "Type"}}) bool {
 			return len(items) == 2
 		}, incoming)
 
@@ -336,7 +330,7 @@ func TestBoolCollectUntil(t *testing.T) {
 			defer close(incoming)
 
 			for i := 3; i > 0; i-- {
-				incoming <- (i%2 == 0)
+				incoming <- {{sel "Type"}}{(i%2 == 0)}
 			}
 		}()
 
@@ -360,17 +354,17 @@ func TestBoolCollectUntil(t *testing.T) {
 	}
 }
 
-func TestBoolMergeWithoutOrder(t *testing.T) {
+func Test{{sel "Name"}}SliceMergeWithoutOrder(t *testing.T) {
 	t.Logf("When data is merged from multiple channels in incoming order but context expires so nothing is received")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolMergeWithoutOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}SliceMergeWithoutOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -385,30 +379,30 @@ func TestBoolMergeWithoutOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		incoming2 := make(chan bool, 0)
+		incoming2 := make(chan {{sel "Type"}}, 0)
 		defer close(incoming2)
 
-		incoming3 := make(chan bool, 0)
+		incoming3 := make(chan {{sel "Type"}}, 0)
 		defer close(incoming3)
 
-		outgoing := services.BoolMergeWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.{{sel "Name"}}SliceMergeWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			time.Sleep(3 * time.Millisecond)
-			incoming <- true
+			incoming <- {{sel "Type"}}{true}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- false
+			incoming2 <- {{sel "Type"}}{false}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- true
+			incoming3 <- {{sel "Type"}}{true}
 		}()
 
 		received := <-outgoing
@@ -424,17 +418,17 @@ func TestBoolMergeWithoutOrder(t *testing.T) {
 	}
 }
 
-func TestBoolMergeInOrder(t *testing.T) {
+func Test{{sel "Name"}}SliceMergeInOrder(t *testing.T) {
 	t.Logf("When data is merged from multiple channels in provided order but context expires so nothing is received")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolMergeInOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}SliceMergeInOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -448,30 +442,30 @@ func TestBoolMergeInOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		incoming2 := make(chan bool, 0)
+		incoming2 := make(chan {{sel "Type"}}, 0)
 		defer close(incoming2)
 
-		incoming3 := make(chan bool, 0)
+		incoming3 := make(chan {{sel "Type"}}, 0)
 		defer close(incoming3)
 
-		outgoing := services.BoolMergeInOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.{{sel "Name"}}SliceMergeInOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			time.Sleep(3 * time.Millisecond)
-			incoming <- true
+			incoming <- {{sel "Type"}}{true}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- false
+			incoming2 <- {{sel "Type"}}{false}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- true
+			incoming3 <- {{sel "Type"}}{true}
 		}()
 
 		received := <-outgoing
@@ -487,17 +481,17 @@ func TestBoolMergeInOrder(t *testing.T) {
 	}
 }
 
-func TestBoolCombinePartiallyWithoutOrder(t *testing.T) {
+func Test{{sel "Name"}}SliceCombinePartiallyWithoutOrder(t *testing.T) {
 	t.Logf("When data is combined from multiple channels without provided order but context expires so nothing is received")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolCombinePartiallyWithoutOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}SliceCombinePartiallyWithoutOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -511,30 +505,30 @@ func TestBoolCombinePartiallyWithoutOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		incoming2 := make(chan bool, 0)
+		incoming2 := make(chan {{sel "Type"}}, 0)
 		defer close(incoming2)
 
-		incoming3 := make(chan bool, 0)
+		incoming3 := make(chan {{sel "Type"}}, 0)
 		defer close(incoming3)
 
-		outgoing := services.BoolCombinePartiallyWithoutOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.{{sel "Name"}}SliceCombinePartiallyWithoutOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			time.Sleep(3 * time.Millisecond)
-			incoming <- true
+			incoming <- {{sel "Type"}}{true}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- false
+			incoming2 <- {{sel "Type"}}{false}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- true
+			incoming3 <- {{sel "Type"}}{true}
 		}()
 
 		received := <-outgoing
@@ -543,24 +537,24 @@ func TestBoolCombinePartiallyWithoutOrder(t *testing.T) {
 		}
 		tests.Passed("Should have recieved 3 item slice")
 
-		if received[0] != true && received[1] != true && received[2] != false {
+		if received[0][0] != true && received[1][0] != true && received[2][0] != false {
 			tests.Failed("Should have recieved items in matching provided order")
 		}
 		tests.Passed("Should have recieved items in matching provided order")
 	}
 }
 
-func TestBoolCombineWithoutOrder(t *testing.T) {
+func Test{{sel "Name"}}SliceCombineWithoutOrder(t *testing.T) {
 	t.Logf("When data is combined from multiple channels in incoming order but context expires so nothing is received")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolCombineWithoutOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}SliceCombineWithoutOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -575,30 +569,30 @@ func TestBoolCombineWithoutOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan {{sel "Type"}}, 0)
 
-		incoming2 := make(chan bool, 0)
+		incoming2 := make(chan {{sel "Type"}}, 0)
 
-		incoming3 := make(chan bool, 0)
+		incoming3 := make(chan {{sel "Type"}}, 0)
 
-		outgoing := services.BoolCombineWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.{{sel "Name"}}SliceCombineWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			defer close(incoming)
 			time.Sleep(3 * time.Millisecond)
-			incoming <- true
+			incoming <- {{sel "Type"}}{true}
 		}()
 
 		go func() {
 			defer close(incoming2)
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- false
+			incoming2 <- {{sel "Type"}}{false}
 		}()
 
 		go func() {
 			defer close(incoming3)
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- true
+			incoming3 <- {{sel "Type"}}{true}
 		}()
 
 		received := <-outgoing
@@ -607,24 +601,24 @@ func TestBoolCombineWithoutOrder(t *testing.T) {
 		}
 		tests.Passed("Should have recieved 3 item slice")
 
-		if received[0] != false && received[1] != true && received[2] != true {
+		if received[0][0] != false && received[1][0] != true && received[2][0] != true {
 			tests.Failed("Should have recieved items in matching time.sleep order")
 		}
 		tests.Passed("Should have recieved items in matching time.sleep order")
 	}
 }
 
-func TestBoolCombineInOrder(t *testing.T) {
+func Test{{sel "Name"}}SliceCombineInOrder(t *testing.T) {
 	t.Logf("When data is merged from multiple channels in provided order but context expires so nothing is received")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolCombineInOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}SliceCombineInOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -638,30 +632,30 @@ func TestBoolCombineInOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		incoming2 := make(chan bool, 0)
+		incoming2 := make(chan {{sel "Type"}}, 0)
 		defer close(incoming2)
 
-		incoming3 := make(chan bool, 0)
+		incoming3 := make(chan {{sel "Type"}}, 0)
 		defer close(incoming3)
 
-		outgoing := services.BoolCombineInOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.{{sel "Name"}}SliceCombineInOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			time.Sleep(3 * time.Millisecond)
-			incoming <- true
+			incoming <- {{sel "Type"}}{true}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- false
+			incoming2 <- {{sel "Type"}}{false}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- true
+			incoming3 <- {{sel "Type"}}{true}
 		}()
 
 		received := <-outgoing
@@ -670,24 +664,24 @@ func TestBoolCombineInOrder(t *testing.T) {
 		}
 		tests.Passed("Should have recieved 3 item slice")
 
-		if received[0] != true && received[1] != true && received[2] != false {
+		if received[0][0] != true && received[1][0] != true && received[2][0] != false {
 			tests.Failed("Should have recieved items in matching provided order")
 		}
 		tests.Passed("Should have recieved items in matching provided order")
 	}
 }
 
-func TestBoolCombineInPartialOrder(t *testing.T) {
+func Test{{sel "Name"}}SliceCombineInPartialOrder(t *testing.T) {
 	t.Logf("When data is combined from multiple channels in provided order but context expires so nothing is received")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolCombineInPartialOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}SliceCombineInPartialOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -701,31 +695,31 @@ func TestBoolCombineInPartialOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan bool, 0)
+		incoming := make(chan {{sel "Type"}}, 0)
 
-		incoming2 := make(chan bool, 0)
+		incoming2 := make(chan {{sel "Type"}}, 0)
 		defer close(incoming2)
 
-		incoming3 := make(chan bool, 0)
+		incoming3 := make(chan {{sel "Type"}}, 0)
 		defer close(incoming3)
 
-		outgoing := services.BoolCombineInPartialOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.{{sel "Name"}}SliceCombineInPartialOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			defer close(incoming)
 
 			time.Sleep(3 * time.Millisecond)
-			incoming <- true
+			incoming <- {{sel "Type"}}{true}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- false
+			incoming2 <- {{sel "Type"}}{false}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- true
+			incoming3 <- {{sel "Type"}}{true}
 		}()
 
 		received := <-outgoing
@@ -734,26 +728,26 @@ func TestBoolCombineInPartialOrder(t *testing.T) {
 		}
 		tests.Passed("Should have recieved 3 item slice")
 
-		if received[0] != true && received[1] != true && received[2] != false {
+		if received[0][0] != true && received[1][0] != true && received[2][0] != false {
 			tests.Failed("Should have recieved items in matching provided order")
 		}
 		tests.Passed("Should have recieved items in matching provided order")
 	}
 }
 
-func TestBoolDistributor(t *testing.T) {
-	dist := services.NewBoolDisributor(0, 1*time.Second)
+func Test{{sel "Name"}}SliceDistributor(t *testing.T) {
+	dist := services.New{{sel "Name"}}SliceDisributor(0, 1*time.Second)
 	dist.Start()
 
-	incoming := make(chan bool, 1)
-	incoming2 := make(chan bool, 1)
-	incoming3 := make(chan bool, 1)
+	incoming := make(chan {{sel "Type"}}, 1)
+	incoming2 := make(chan {{sel "Type"}}, 1)
+	incoming3 := make(chan {{sel "Type"}}, 1)
 
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
 
-	dist.Publish(true)
+	dist.Publish({{sel "Type"}}{true, false, true})
 
 	select {
 	case <-time.After(15 * time.Millisecond):
@@ -761,12 +755,12 @@ func TestBoolDistributor(t *testing.T) {
 	case initial := <-incoming:
 		tests.Passed("Should have received a matching data on first channel")
 
-		if !isEqual(initial, <-incoming2) {
+		if !isEqualSlice(initial, <-incoming2) {
 			tests.Failed("Should have received a matching data on second channel")
 		}
 		tests.Passed("Should have received a matching data on second channel")
 
-		if !isEqual(initial, <-incoming3) {
+		if !isEqualSlice(initial, <-incoming3) {
 			tests.Failed("Should have received a matching data on third channel")
 		}
 		tests.Passed("Should have received a matching data on third channel")
@@ -774,7 +768,7 @@ func TestBoolDistributor(t *testing.T) {
 
 	dist.Stop()
 
-	dist.PublishDeadline(true, 1*time.Millisecond)
+	dist.PublishDeadline({{sel "Type"}}{true, false, true}, 1*time.Millisecond)
 
 	if len(incoming) != 0 || len(incoming2) != 0 || len(incoming3) != 0 {
 		tests.Failed("Should not have received any items after publisher is stopped")
@@ -782,6 +776,30 @@ func TestBoolDistributor(t *testing.T) {
 	tests.Passed("Should not have received any items after publisher is stopped")
 }
 
-func isEqual(item1 bool, item2 bool) bool {
-	return item1 == item2
+func isEqualSlice(item1 {{sel "Type"}}, item2 {{sel "Type"}}) bool {
+	if len(item1) != len(item2) {
+		return false
+	}
+
+	for index, item := range item1 {
+		if item2[index] != item {
+			return false
+		}
+	}
+
+	return true
+}
+
+func isEqualDoubleSlice(item1 []{{sel "Type"}}, item2 []{{sel "Type"}}) bool {
+	if len(item1) != len(item2) {
+		return false
+	}
+
+	for index, item := range item1 {
+		if !isEqualSlice(item, item2[index]) {
+			return false
+		}
+	}
+
+	return true
 }
