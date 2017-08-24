@@ -15,7 +15,7 @@ func Test{{sel "Name"}}SliceCollect(t *testing.T) {
 		defer cancl()
 
 		incoming := make(chan {{sel "Type"}}, 0)
-		outgoing := services.{{sel "Name"}}SliceCollect(ctx, 10*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}Collect(ctx, 10*time.Millisecond, incoming)
 
 		go func() {
 			defer close(incoming)
@@ -24,7 +24,60 @@ func Test{{sel "Name"}}SliceCollect(t *testing.T) {
 				select {
 				case <-ctx.Done():
 					return
+				{{ if eq (sel "Type") "[]uint" }}
+				case incoming <- {{sel "Type"}}{1}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				case incoming <- {{sel "Type"}}{1}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				case incoming <- {{sel "Type"}}{1}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				case incoming <- {{sel "Type"}}{1}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				case incoming <- {{sel "Type"}}{1.0}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				case incoming <- {{sel "Type"}}{1.0}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				case incoming <- {{sel "Type"}}{1.0}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				case incoming <- {{sel "Type"}}{1.0}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
 				case incoming <- {{sel "Type"}}{(i%2 == 0)}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				case incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i))}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				case incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}:
+				{{ end }}
 					continue
 				}
 			}
@@ -49,14 +102,67 @@ func Test{{sel "Name"}}SliceCollect(t *testing.T) {
 		defer cancl()
 
 		incoming := make(chan {{sel "Type"}}, 0)
-		outgoing := services.{{sel "Name"}}SliceCollect(ctx, 10*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}Collect(ctx, 10*time.Millisecond, incoming)
 
 		go func() {
 			for i := 20; i > 0; i-- {
 				select {
 				case <-ctx.Done():
 					return
+				{{ if  eq (sel "Type") "[]uint" }}
+				case incoming <- {{sel "Type"}}{1}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				case incoming <- {{sel "Type"}}{1}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				case incoming <- {{sel "Type"}}{1}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				case incoming <- {{sel "Type"}}{1}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				case incoming <- {{sel "Type"}}{1.0}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				case incoming <- {{sel "Type"}}{1.0}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				case incoming <- {{sel "Type"}}{1.0}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				case incoming <- {{sel "Type"}}{1.0}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
 				case incoming <- {{sel "Type"}}{(i%2 == 0)}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				case incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i))}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				case incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}:
+				{{ end }}
 					time.Sleep(50 * time.Millisecond)
 					continue
 				}
@@ -76,11 +182,64 @@ func Test{{sel "Name"}}SliceCollect(t *testing.T) {
 		defer cancl()
 
 		incoming := make(chan {{sel "Type"}}, 0)
-		outgoing := services.{{sel "Name"}}SliceCollect(context.Background(), 10*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}Collect(context.Background(), 10*time.Millisecond, incoming)
 
 		go func() {
 			for i := 3; i > 0; i-- {
-				incoming <- {{sel "Type"}}{(i%2 == 0)}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 			}
 		}()
 
@@ -101,14 +260,67 @@ func Test{{sel "Name"}}SlicePartialCollect(t *testing.T) {
 		defer cancl()
 
 		incoming := make(chan {{sel "Type"}}, 0)
-		outgoing := services.{{sel "Name"}}SlicePartialCollect(ctx, 10*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}PartialCollect(ctx, 10*time.Millisecond, incoming)
 
 		go func() {
 			for i := 20; i > 0; i-- {
 				select {
 				case <-ctx.Done():
 					return
+				{{ if  eq (sel "Type") "[]uint" }}
+				case incoming <- {{sel "Type"}}{1}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				case incoming <- {{sel "Type"}}{1}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				case incoming <- {{sel "Type"}}{1}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				case incoming <- {{sel "Type"}}{1}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				case incoming <- {{sel "Type"}}{1.0}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				case incoming <- {{sel "Type"}}{1.0}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				case incoming <- {{sel "Type"}}{1.0}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				case incoming <- {{sel "Type"}}{1.0}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
 				case incoming <- {{sel "Type"}}{(i%2 == 0)}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				case incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i))}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				case incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}:
+				{{ end }}
 					continue
 				}
 			}
@@ -133,14 +345,67 @@ func Test{{sel "Name"}}SlicePartialCollect(t *testing.T) {
 		defer cancl()
 
 		incoming := make(chan {{sel "Type"}}, 0)
-		outgoing := services.{{sel "Name"}}SlicePartialCollect(ctx, 10*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}PartialCollect(ctx, 10*time.Millisecond, incoming)
 
 		go func() {
 			for i := 20; i > 0; i-- {
 				select {
 				case <-ctx.Done():
 					return
+				{{ if  eq (sel "Type") "[]uint" }}
+				case incoming <- {{sel "Type"}}{1}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				case incoming <- {{sel "Type"}}{1}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				case incoming <- {{sel "Type"}}{1}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				case incoming <- {{sel "Type"}}{1}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				case incoming <- {{sel "Type"}}{1.0}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				case incoming <- {{sel "Type"}}{1.0}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				case incoming <- {{sel "Type"}}{1.0}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				case incoming <- {{sel "Type"}}{1.0}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
 				case incoming <- {{sel "Type"}}{(i%2 == 0)}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				case incoming <- {{sel "Type"}}{i}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				case incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i))}:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				case incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}:
+				{{ end }}
 					time.Sleep(60 * time.Millisecond)
 					continue
 				}
@@ -165,13 +430,66 @@ func Test{{sel "Name"}}SlicePartialCollect(t *testing.T) {
 		defer cancl()
 
 		incoming := make(chan {{sel "Type"}}, 0)
-		outgoing := services.{{sel "Name"}}SlicePartialCollect(context.Background(), 10*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}PartialCollect(context.Background(), 10*time.Millisecond, incoming)
 
 		go func() {
 			defer close(incoming)
 
 			for i := 3; i > 0; i-- {
-				incoming <- {{sel "Type"}}{(i%2 == 0)}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 			}
 		}()
 
@@ -202,7 +520,7 @@ func Test{{sel "Name"}}SliceMutate(t *testing.T) {
 		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.{{sel "Name"}}SliceMutate(ctx, 2*time.Millisecond, func(item {{sel "Type"}}) {{sel "Type"}} { return item }, incoming)
+		outgoing := services.{{sel "Name"}}Mutate(ctx, 2*time.Millisecond, func(item {{sel "Type"}}) {{sel "Type"}} { return item }, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -218,15 +536,68 @@ func Test{{sel "Name"}}SliceMutate(t *testing.T) {
 		defer cancl()
 
 		incoming := make(chan {{sel "Type"}}, 0)
-		outgoing := services.{{sel "Name"}}SliceMutate(ctx, 10*time.Millisecond, func(item {{sel "Type"}}) {{sel "Type"}} {
+		outgoing := services.{{sel "Name"}}Mutate(ctx, 10*time.Millisecond, func(item {{sel "Type"}}) {{sel "Type"}} {
 			return item[0:2]
 		}, incoming)
 
 		go func() {
 			defer close(incoming)
 
-			for i := 1; i > 0; i-- {
-				incoming <- {{sel "Type"}}{(i%2 == 0), (i*2%2 == 0), (i*4%2 == 0)}
+			for i :=1; i > 0; i-- {
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 			}
 		}()
 
@@ -254,7 +625,7 @@ func Test{{sel "Name"}}SliceFilter(t *testing.T) {
 		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.{{sel "Name"}}SliceFilter(ctx, 2*time.Millisecond, func(item {{sel "Type"}}) bool { return true }, incoming)
+		outgoing := services.{{sel "Name"}}Filter(ctx, 2*time.Millisecond, func(item {{sel "Type"}}) bool { return true }, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -270,7 +641,7 @@ func Test{{sel "Name"}}SliceFilter(t *testing.T) {
 		defer cancl()
 
 		incoming := make(chan {{sel "Type"}}, 0)
-		outgoing := services.{{sel "Name"}}SliceFilter(ctx, 10*time.Millisecond, func(item {{sel "Type"}}) bool {
+		outgoing := services.{{sel "Name"}}Filter(ctx, 10*time.Millisecond, func(item {{sel "Type"}}) bool {
 			return item[0] == false
 		}, incoming)
 
@@ -278,7 +649,60 @@ func Test{{sel "Name"}}SliceFilter(t *testing.T) {
 			defer close(incoming)
 
 			for i := 2; i > 0; i-- {
-				incoming <- {{sel "Type"}}{(i%2 == 0)}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 			}
 		}()
 
@@ -306,7 +730,7 @@ func Test{{sel "Name"}}SliceCollectUntil(t *testing.T) {
 		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.{{sel "Name"}}SliceCollectUntil(ctx, 2*time.Millisecond, func(item []{{sel "Type"}}) bool { return true }, incoming)
+		outgoing := services.{{sel "Name"}}CollectUntil(ctx, 2*time.Millisecond, func(item []{{sel "Type"}}) bool { return true }, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -322,7 +746,7 @@ func Test{{sel "Name"}}SliceCollectUntil(t *testing.T) {
 		defer cancl()
 
 		incoming := make(chan {{sel "Type"}}, 0)
-		outgoing := services.{{sel "Name"}}SliceCollectUntil(ctx, 10*time.Millisecond, func(items []{{sel "Type"}}) bool {
+		outgoing := services.{{sel "Name"}}CollectUntil(ctx, 10*time.Millisecond, func(items []{{sel "Type"}}) bool {
 			return len(items) == 2
 		}, incoming)
 
@@ -330,7 +754,60 @@ func Test{{sel "Name"}}SliceCollectUntil(t *testing.T) {
 			defer close(incoming)
 
 			for i := 3; i > 0; i-- {
-				incoming <- {{sel "Type"}}{(i%2 == 0)}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 			}
 		}()
 
@@ -364,7 +841,7 @@ func Test{{sel "Name"}}SliceMergeWithoutOrder(t *testing.T) {
 		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.{{sel "Name"}}SliceMergeWithoutOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}MergeWithoutOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -388,21 +865,180 @@ func Test{{sel "Name"}}SliceMergeWithoutOrder(t *testing.T) {
 		incoming3 := make(chan {{sel "Type"}}, 0)
 		defer close(incoming3)
 
-		outgoing := services.{{sel "Name"}}SliceMergeWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.{{sel "Name"}}MergeWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			time.Sleep(3 * time.Millisecond)
-			incoming <- {{sel "Type"}}{true}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- {{sel "Type"}}{false}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming2 <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming2 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming2 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming2 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- {{sel "Type"}}{true}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming3 <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming3 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming3 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming3 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		received := <-outgoing
@@ -428,7 +1064,7 @@ func Test{{sel "Name"}}SliceMergeInOrder(t *testing.T) {
 		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.{{sel "Name"}}SliceMergeInOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}MergeInOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -451,21 +1087,180 @@ func Test{{sel "Name"}}SliceMergeInOrder(t *testing.T) {
 		incoming3 := make(chan {{sel "Type"}}, 0)
 		defer close(incoming3)
 
-		outgoing := services.{{sel "Name"}}SliceMergeInOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.{{sel "Name"}}MergeInOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			time.Sleep(3 * time.Millisecond)
-			incoming <- {{sel "Type"}}{true}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- {{sel "Type"}}{false}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming2 <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming2 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming2 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming2 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- {{sel "Type"}}{true}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming3 <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming3 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming3 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming3 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		received := <-outgoing
@@ -491,7 +1286,7 @@ func Test{{sel "Name"}}SliceCombinePartiallyWithoutOrder(t *testing.T) {
 		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.{{sel "Name"}}SliceCombinePartiallyWithoutOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}CombinePartiallyWithoutOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -514,21 +1309,180 @@ func Test{{sel "Name"}}SliceCombinePartiallyWithoutOrder(t *testing.T) {
 		incoming3 := make(chan {{sel "Type"}}, 0)
 		defer close(incoming3)
 
-		outgoing := services.{{sel "Name"}}SliceCombinePartiallyWithoutOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.{{sel "Name"}}CombinePartiallyWithoutOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			time.Sleep(3 * time.Millisecond)
-			incoming <- {{sel "Type"}}{true}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- {{sel "Type"}}{false}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming2 <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming2 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming2 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming2 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- {{sel "Type"}}{true}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming3 <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming3 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming3 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming3 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		received := <-outgoing
@@ -554,7 +1508,7 @@ func Test{{sel "Name"}}SliceCombineWithoutOrder(t *testing.T) {
 		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.{{sel "Name"}}SliceCombineWithoutOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}CombineWithoutOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -575,24 +1529,183 @@ func Test{{sel "Name"}}SliceCombineWithoutOrder(t *testing.T) {
 
 		incoming3 := make(chan {{sel "Type"}}, 0)
 
-		outgoing := services.{{sel "Name"}}SliceCombineWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.{{sel "Name"}}CombineWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			defer close(incoming)
 			time.Sleep(3 * time.Millisecond)
-			incoming <- {{sel "Type"}}{true}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		go func() {
 			defer close(incoming2)
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- {{sel "Type"}}{false}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming2 <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming2 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming2 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming2 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		go func() {
 			defer close(incoming3)
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- {{sel "Type"}}{true}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming3 <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming3 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming3 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming3 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		received := <-outgoing
@@ -618,7 +1731,7 @@ func Test{{sel "Name"}}SliceCombineInOrder(t *testing.T) {
 		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.{{sel "Name"}}SliceCombineInOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}CombineInOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -641,21 +1754,180 @@ func Test{{sel "Name"}}SliceCombineInOrder(t *testing.T) {
 		incoming3 := make(chan {{sel "Type"}}, 0)
 		defer close(incoming3)
 
-		outgoing := services.{{sel "Name"}}SliceCombineInOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.{{sel "Name"}}CombineInOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			time.Sleep(3 * time.Millisecond)
-			incoming <- {{sel "Type"}}{true}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- {{sel "Type"}}{false}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming2 <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming2 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming2 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming2 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- {{sel "Type"}}{true}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming3 <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming3 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming3 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming3 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		received := <-outgoing
@@ -681,7 +1953,7 @@ func Test{{sel "Name"}}SliceCombineInPartialOrder(t *testing.T) {
 		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.{{sel "Name"}}SliceCombineInPartialOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.{{sel "Name"}}CombineInPartialOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -703,23 +1975,182 @@ func Test{{sel "Name"}}SliceCombineInPartialOrder(t *testing.T) {
 		incoming3 := make(chan {{sel "Type"}}, 0)
 		defer close(incoming3)
 
-		outgoing := services.{{sel "Name"}}SliceCombineInPartialOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.{{sel "Name"}}CombineInPartialOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			defer close(incoming)
 
 			time.Sleep(3 * time.Millisecond)
-			incoming <- {{sel "Type"}}{true}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
-			incoming2 <- {{sel "Type"}}{false}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming2 <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming2 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming2 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming2 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
-			incoming3 <- {{sel "Type"}}{true}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming3 <- {{sel "Type"}}{1, 2, ,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming3 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming3 <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming3 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				{{ end }}
 		}()
 
 		received := <-outgoing
@@ -747,7 +2178,62 @@ func Test{{sel "Name"}}SliceDistributor(t *testing.T) {
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
 
-	dist.Publish({{sel "Type"}}{true, false, true})
+	dist.Publish(
+				{{ if  eq (sel "Type") "[]uint" }}
+				  {{sel "Type"}}{1, 2, 3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				  {{sel "Type"}}{1, 2, ,3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				  {{sel "Type"}}{1,2,3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				  {{sel "Type"}}{1,2,3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				  {{sel "Type"}}{i, i * 2, i *3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				  {{sel "Type"}}{i, i *2, *3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				  {{sel "Type"}}{i, i * 2, i * 3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				  {{sel "Type"}}{i, i * 2, i *3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				  {{sel "Type"}}{i, i *2, i * 3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				  {{sel "Type"}}{1.0, 2.0, 3.0},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				  {{sel "Type"}}{1.0, 2.0, 3.0},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				  {{sel "Type"}}{1.0, 2.0, 3.0},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				  {{sel "Type"}}{1.0, 2.0, 3.0},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				  {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				  {{sel "Type"}}{i, i *2, i * 3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				  {{sel "Type"}}{i, i *2, i * 3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				  {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				  {{sel "Type"}}{fmt.Sprintf("%d", i)},
+				{{ end }}
+	)
 
 	select {
 	case <-time.After(15 * time.Millisecond):
@@ -755,12 +2241,12 @@ func Test{{sel "Name"}}SliceDistributor(t *testing.T) {
 	case initial := <-incoming:
 		tests.Passed("Should have received a matching data on first channel")
 
-		if !isEqualSlice(initial, <-incoming2) {
+		if !is{{sel "Name"}}EqualSlice(initial, <-incoming2) {
 			tests.Failed("Should have received a matching data on second channel")
 		}
 		tests.Passed("Should have received a matching data on second channel")
 
-		if !isEqualSlice(initial, <-incoming3) {
+		if !is{{sel "Name"}}EqualSlice(initial, <-incoming3) {
 			tests.Failed("Should have received a matching data on third channel")
 		}
 		tests.Passed("Should have received a matching data on third channel")
@@ -768,7 +2254,63 @@ func Test{{sel "Name"}}SliceDistributor(t *testing.T) {
 
 	dist.Stop()
 
-	dist.PublishDeadline({{sel "Type"}}{true, false, true}, 1*time.Millisecond)
+	dist.PublishDeadline(
+				{{ if  eq (sel "Type") "[]uint" }}
+				  {{sel "Type"}}{1, 2, 3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				  {{sel "Type"}}{1, 2, ,3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				  {{sel "Type"}}{1,2,3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				  {{sel "Type"}}{1,2,3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				  {{sel "Type"}}{i, i * 2, i *3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				  {{sel "Type"}}{i, i *2, *3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				  {{sel "Type"}}{i, i * 2, i * 3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				  {{sel "Type"}}{i, i * 2, i *3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				  {{sel "Type"}}{i, i *2, i * 3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				  {{sel "Type"}}{1.0, 2.0, 3.0},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				  {{sel "Type"}}{1.0, 2.0, 3.0},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				  {{sel "Type"}}{1.0, 2.0, 3.0},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				  {{sel "Type"}}{1.0, 2.0, 3.0},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				  {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				  {{sel "Type"}}{i, i *2, i * 3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				  {{sel "Type"}}{i, i *2, i * 3},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				  {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))},
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				  {{sel "Type"}}{fmt.Sprintf("%d", i)},
+				{{ end }}
+				1*time.Millisecond,
+			)
 
 	if len(incoming) != 0 || len(incoming2) != 0 || len(incoming3) != 0 {
 		tests.Failed("Should not have received any items after publisher is stopped")
@@ -776,7 +2318,7 @@ func Test{{sel "Name"}}SliceDistributor(t *testing.T) {
 	tests.Passed("Should not have received any items after publisher is stopped")
 }
 
-func isEqualSlice(item1 {{sel "Type"}}, item2 {{sel "Type"}}) bool {
+func is{{sel "Name"}}EqualSlice(item1 {{sel "Type"}}, item2 {{sel "Type"}}) bool {
 	if len(item1) != len(item2) {
 		return false
 	}
@@ -790,13 +2332,13 @@ func isEqualSlice(item1 {{sel "Type"}}, item2 {{sel "Type"}}) bool {
 	return true
 }
 
-func isEqualDoubleSlice(item1 []{{sel "Type"}}, item2 []{{sel "Type"}}) bool {
+func is{{sel "Name"}}EqualDoubleSlice(item1 []{{sel "Type"}}, item2 []{{sel "Type"}}) bool {
 	if len(item1) != len(item2) {
 		return false
 	}
 
 	for index, item := range item1 {
-		if !isEqualSlice(item, item2[index]) {
+		if !is{{sel "Name"}}EqualSlice(item, item2[index]) {
 			return false
 		}
 	}

@@ -11,20 +11,20 @@ import (
 
 //go:generate moz generate-file -fromFile ./float64_slice_service.go -toDir ./impl/float64slice
 
-// Float64SliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of float64.
-type Float64SliceFromByteAdapterWithContext func(context.Context, chan []byte) chan float64
+// Float64SliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of []float64.
+type Float64SliceFromByteAdapterWithContext func(context.Context, chan []byte) chan []float64
 
-// Float64SliceToByteAdapter defines a function that that will take a channel of bytes and return a channel of float64.
-type Float64SliceToByteAdapter func(context.Context, chan float64) chan []byte
+// Float64SliceToByteAdapter defines a function that that will take a channel of bytes and return a channel of []float64.
+type Float64SliceToByteAdapter func(context.Context, chan []float64) chan []byte
 
 // Float64SlicePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func Float64SlicePartialCollect(ctx context.Context, waitTime time.Duration, in chan float64) chan []float64 {
-	res := make(chan []float64, 0)
+func Float64SlicePartialCollect(ctx context.Context, waitTime time.Duration, in chan []float64) chan [][]float64 {
+	res := make(chan [][]float64, 0)
 
 	go func() {
-		var buffer []float64
+		var buffer [][]float64
 
 		t := time.NewTimer(waitTime)
 		defer t.Stop()
@@ -58,11 +58,11 @@ func Float64SlicePartialCollect(ctx context.Context, waitTime time.Duration, in 
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func Float64SliceCollect(ctx context.Context, waitTime time.Duration, in chan float64) chan []float64 {
-	res := make(chan []float64, 0)
+func Float64SliceCollect(ctx context.Context, waitTime time.Duration, in chan []float64) chan [][]float64 {
+	res := make(chan [][]float64, 0)
 
 	go func() {
-		var buffer []float64
+		var buffer [][]float64
 
 		t := time.NewTimer(waitTime)
 		defer t.Stop()
@@ -95,8 +95,8 @@ func Float64SliceCollect(ctx context.Context, waitTime time.Duration, in chan fl
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func Float64SliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func(float64) float64, in chan float64) chan float64 {
-	res := make(chan float64, 0)
+func Float64SliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func([]float64) []float64, in chan []float64) chan []float64 {
+	res := make(chan []float64, 0)
 
 	go func() {
 		t := time.NewTimer(waitTime)
@@ -128,8 +128,8 @@ func Float64SliceMutate(ctx context.Context, waitTime time.Duration, mutateFn fu
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func Float64SliceFilter(ctx context.Context, waitTime time.Duration, filterFn func(float64) bool, in chan float64) chan float64 {
-	res := make(chan float64, 0)
+func Float64SliceFilter(ctx context.Context, waitTime time.Duration, filterFn func([]float64) bool, in chan []float64) chan []float64 {
+	res := make(chan []float64, 0)
 
 	go func() {
 		t := time.NewTimer(waitTime)
@@ -167,11 +167,11 @@ func Float64SliceFilter(ctx context.Context, waitTime time.Duration, filterFn fu
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func Float64SliceCollectUntil(ctx context.Context, waitTime time.Duration, condition func([]float64) bool, in chan float64) chan []float64 {
-	res := make(chan []float64, 0)
+func Float64SliceCollectUntil(ctx context.Context, waitTime time.Duration, condition func([][]float64) bool, in chan []float64) chan [][]float64 {
+	res := make(chan [][]float64, 0)
 
 	go func() {
-		var buffer []float64
+		var buffer [][]float64
 
 		t := time.NewTimer(waitTime)
 		defer t.Stop()
@@ -208,7 +208,7 @@ func Float64SliceCollectUntil(ctx context.Context, waitTime time.Duration, condi
 	return res
 }
 
-// Float64SliceMergeWithoutOrder merges the incoming data from the float64 into a single stream of float64,
+// Float64SliceMergeWithoutOrder merges the incoming data from the []float64 into a single stream of []float64,
 // merge collects data from all provided channels in turns, each giving a specified time to deliver, else
 // skipped until another turn. Once all data is collected from each sender, then the data set is merged into
 // a single slice and delivered to the returned channel.
@@ -222,7 +222,7 @@ func Float64SliceCollectUntil(ctx context.Context, waitTime time.Duration, condi
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64SliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan float64) chan []float64 {
+func Float64SliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []float64) chan []float64 {
 	res := make(chan []float64, 0)
 
 	for _, elem := range senders {
@@ -237,14 +237,14 @@ func Float64SliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duratio
 
 		total := len(senders)
 		filled := make(map[int]bool, 0)
-		filledContent := make(map[int]float64, 0)
+		filledContent := make(map[int][]float64, 0)
 
 		for {
 			if len(filled) == total {
 				var content []float64
 
 				for _, item := range filledContent {
-					content = append(content, item)
+					content = append(content, item...)
 				}
 
 				res <- content
@@ -303,7 +303,7 @@ func Float64SliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duratio
 	return res
 }
 
-// Float64SliceMergeInOrder merges the incoming data from the float64 into a single stream of float64,
+// Float64SliceMergeInOrder merges the incoming data from the []float64 into a single stream of []float64,
 // merge collects data from all provided channels in turns, each giving a specified time to deliver, else
 // skipped until another turn. Once all data is collected from each sender, then the data set is merged into
 // a single slice and delivered to the returned channel.
@@ -317,7 +317,7 @@ func Float64SliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duratio
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64SliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan float64) chan []float64 {
+func Float64SliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []float64) chan []float64 {
 	res := make(chan []float64, 0)
 
 	for _, elem := range senders {
@@ -332,7 +332,7 @@ func Float64SliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, se
 
 		total := len(senders)
 		filled := make(map[int]bool, 0)
-		filledContent := make(map[int]float64, 0)
+		filledContent := make(map[int][]float64, 0)
 
 		for {
 			if len(filled) == total {
@@ -340,7 +340,7 @@ func Float64SliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, se
 
 				for index := range senders {
 					item := filledContent[index]
-					content = append(content, item)
+					content = append(content, item...)
 				}
 
 				res <- content
@@ -413,8 +413,8 @@ func Float64SliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, se
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64SliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan float64) chan []float64 {
-	res := make(chan []float64, 0)
+func Float64SliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []float64) chan [][]float64 {
+	res := make(chan [][]float64, 0)
 
 	for _, elem := range senders {
 		if elem == nil {
@@ -424,7 +424,7 @@ func Float64SliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait t
 	}
 
 	go func() {
-		content := make([]float64, 0)
+		content := make([][]float64, 0)
 
 		var index int
 
@@ -445,7 +445,7 @@ func Float64SliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait t
 
 				index = 0
 				filled = make(map[int]bool, 0)
-				content = make([]float64, len(senders))
+				content = make([][]float64, len(senders))
 			}
 
 			// if the current index has being filled, shift forward and re-attempt loop.
@@ -515,8 +515,8 @@ func Float64SliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait t
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64SliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan float64) chan []float64 {
-	res := make(chan []float64, 0)
+func Float64SliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []float64) chan [][]float64 {
+	res := make(chan [][]float64, 0)
 
 	for _, elem := range senders {
 		if elem == nil {
@@ -526,7 +526,7 @@ func Float64SliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Durat
 	}
 
 	go func() {
-		content := make([]float64, 0)
+		content := make([][]float64, 0)
 
 		var index int
 
@@ -538,7 +538,7 @@ func Float64SliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Durat
 				res <- content
 				index = 0
 				filled = make(map[int]bool, 0)
-				content = make([]float64, len(senders))
+				content = make([][]float64, len(senders))
 			}
 
 			// if the current index has being filled, shift forward and reattempt loop.
@@ -606,8 +606,8 @@ func Float64SliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Durat
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64SliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan float64) chan []float64 {
-	res := make(chan []float64, 0)
+func Float64SliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []float64) chan [][]float64 {
+	res := make(chan [][]float64, 0)
 
 	for _, elem := range senders {
 		if elem == nil {
@@ -617,7 +617,7 @@ func Float64SliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Dur
 	}
 
 	go func() {
-		content := make([]float64, len(senders))
+		content := make([][]float64, len(senders))
 
 		var index int
 
@@ -637,7 +637,7 @@ func Float64SliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Dur
 				res <- content
 				index = 0
 				filled = make(map[int]bool, 0)
-				content = make([]float64, len(senders))
+				content = make([][]float64, len(senders))
 			}
 
 			// if the current index has being filled, shift forward and reattempt loop.
@@ -709,8 +709,8 @@ func Float64SliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Dur
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64SliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan float64) chan []float64 {
-	res := make(chan []float64, 0)
+func Float64SliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []float64) chan [][]float64 {
+	res := make(chan [][]float64, 0)
 
 	for _, elem := range senders {
 		if elem == nil {
@@ -720,7 +720,7 @@ func Float64SliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, 
 	}
 
 	go func() {
-		content := make([]float64, len(senders))
+		content := make([][]float64, len(senders))
 
 		var index int
 
@@ -732,7 +732,7 @@ func Float64SliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, 
 				res <- content
 				index = 0
 				filled = make(map[int]bool, 0)
-				content = make([]float64, len(senders))
+				content = make([][]float64, len(senders))
 			}
 
 			// if the current index has being filled, shift forward and reattempt loop.
@@ -793,11 +793,11 @@ func Float64SliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, 
 // have eternal channel blocks.
 type Float64SliceDistributor struct {
 	running             int64
-	messages            chan float64
+	messages            chan []float64
 	close               chan struct{}
 	clear               chan struct{}
-	subscribers         []chan float64
-	newSub              chan chan float64
+	subscribers         []chan []float64
+	newSub              chan chan []float64
 	sendWaitBeforeAbort time.Duration
 }
 
@@ -810,16 +810,16 @@ func NewFloat64SliceDisributor(buffer int, sendWaitBeforeAbort time.Duration) *F
 	return &Float64SliceDistributor{
 		clear:               make(chan struct{}, 0),
 		close:               make(chan struct{}, 0),
-		subscribers:         make([]chan float64, 0),
-		newSub:              make(chan chan float64, 0),
-		messages:            make(chan float64, buffer),
+		subscribers:         make([]chan []float64, 0),
+		newSub:              make(chan chan []float64, 0),
+		messages:            make(chan []float64, buffer),
 		sendWaitBeforeAbort: sendWaitBeforeAbort,
 	}
 }
 
 // PublishDeadline sends the message into the distributor to be delivered to all subscribers if it has not
 // passed the provided deadline.
-func (d *Float64SliceDistributor) PublishDeadline(message float64, dur time.Duration) {
+func (d *Float64SliceDistributor) PublishDeadline(message []float64, dur time.Duration) {
 	if atomic.LoadInt64(&d.running) == 0 {
 		return
 	}
@@ -836,7 +836,7 @@ func (d *Float64SliceDistributor) PublishDeadline(message float64, dur time.Dura
 }
 
 // Publish sends the message into the distributor to be delivered to all subscribers.
-func (d *Float64SliceDistributor) Publish(message float64) {
+func (d *Float64SliceDistributor) Publish(message []float64) {
 	if atomic.LoadInt64(&d.running) == 0 {
 		return
 	}
@@ -845,7 +845,7 @@ func (d *Float64SliceDistributor) Publish(message float64) {
 }
 
 // Subscribe adds the channel into the distributor subscription lists.
-func (d *Float64SliceDistributor) Subscribe(sub chan float64) {
+func (d *Float64SliceDistributor) Subscribe(sub chan []float64) {
 	if atomic.LoadInt64(&d.running) == 0 {
 		return
 	}
@@ -903,7 +903,7 @@ func (d *Float64SliceDistributor) manage() {
 			}
 
 			for _, sub := range d.subscribers {
-				go func(c chan float64) {
+				go func(c chan []float64) {
 					tick := time.NewTimer(d.sendWaitBeforeAbort)
 					defer tick.Stop()
 
@@ -922,7 +922,7 @@ func (d *Float64SliceDistributor) manage() {
 }
 
 // MonoFloat64SliceService defines a interface for underline systems which want to communicate like
-// in a stream using channels to send/recieve only float64 values from a single source.
+// in a stream using channels to send/recieve only []float64 values from a single source.
 // It allows different services to create adapters to
 // transform data coming in and out from the Service.
 // Auto-Generated using the moz code-generator https://github.com/influx6/moz.
@@ -932,12 +932,12 @@ type MonoFloat64SliceService interface {
 	ReadErrors() <-chan error
 
 	// Read will return a channel which will allow reading from the Service until it it is closed.
-	Read() (<-chan float64, error)
+	Read() (<-chan []float64, error)
 
 	// Receive will take the channel, which will be writing into the Service for it's internal processing
 	// and the Service will continue to read form the channel till the channel is closed.
 	// Useful for collating/collecting services.
-	Write(<-chan float64) error
+	Write(<-chan []float64) error
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
@@ -949,7 +949,7 @@ type MonoFloat64SliceService interface {
 }
 
 // Float64SliceService defines a interface for underline systems which want to communicate like
-// in a stream using channels to send/recieve float64 values. It allows different services to create adapters to
+// in a stream using channels to send/recieve []float64 values. It allows different services to create adapters to
 // transform data coming in and out from the Service.
 // Auto-Generated using the moz code-generator https://github.com/influx6/moz.
 // @iface
@@ -958,12 +958,12 @@ type Float64SliceService interface {
 	ReadErrors() <-chan error
 
 	// Read will return a channel which will allow reading from the Service until it it is closed.
-	Read(string) (<-chan float64, error)
+	Read(string) (<-chan []float64, error)
 
 	// Receive will take the channel, which will be writing into the Service for it's internal processing
 	// and the Service will continue to read form the channel till the channel is closed.
 	// Useful for collating/collecting services.
-	Write(string, <-chan float64) error
+	Write(string, <-chan []float64) error
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
