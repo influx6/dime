@@ -12,7 +12,7 @@ import (
 	"github.com/influx6/faux/tests"
 )
 
-func TestFloat64SliceSliceCollect(t *testing.T) {
+func TestFloat64SliceCollect(t *testing.T) {
 	t.Logf("When all data is received before 3 second")
 	{
 
@@ -104,7 +104,7 @@ func TestFloat64SliceSliceCollect(t *testing.T) {
 	}
 }
 
-func TestFloat64SliceSlicePartialCollect(t *testing.T) {
+func TestFloat64SlicePartialCollect(t *testing.T) {
 	t.Logf("When all data is received before 3 second")
 	{
 
@@ -209,7 +209,7 @@ func TestFloat64SliceSlicePartialCollect(t *testing.T) {
 	}
 }
 
-func TestFloat64SliceSliceMutate(t *testing.T) {
+func TestFloat64SliceMutate(t *testing.T) {
 	t.Logf("When data is mutated but not received due to context expiration on receive")
 	{
 
@@ -263,7 +263,7 @@ func TestFloat64SliceSliceMutate(t *testing.T) {
 	}
 }
 
-func TestFloat64SliceSliceFilter(t *testing.T) {
+func TestFloat64SliceFilter(t *testing.T) {
 	t.Logf("When data is filtered but not received due to context expiration on receive")
 	{
 
@@ -273,8 +273,9 @@ func TestFloat64SliceSliceFilter(t *testing.T) {
 		incoming := make(chan []float64, 0)
 		defer close(incoming)
 
-		outgoing := services.Float64SliceFilter(ctx, 2*time.Millisecond, func(item []float64) bool { return true }, incoming)
-
+		outgoing := services.Float64SliceFilter(ctx, 2*time.Millisecond, func(item []float64) bool {
+			return true
+		}, incoming)
 		_, ok := <-outgoing
 		if ok {
 			tests.Failed("Should have recieved close signal due to context expiration")
@@ -290,13 +291,13 @@ func TestFloat64SliceSliceFilter(t *testing.T) {
 
 		incoming := make(chan []float64, 0)
 		outgoing := services.Float64SliceFilter(ctx, 10*time.Millisecond, func(item []float64) bool {
-			return item[0] == false
+			return true
 		}, incoming)
 
 		go func() {
 			defer close(incoming)
 
-			for i := 2; i > 0; i-- {
+			for i := 1; i > 0; i-- {
 
 				incoming <- []float64{1.0, 2.0, 3.0}
 
@@ -304,8 +305,8 @@ func TestFloat64SliceSliceFilter(t *testing.T) {
 		}()
 
 		received1 := <-outgoing
-		if len(received1) != 1 {
-			tests.Failed("Should have recieved only 1 as value but got %t", received1)
+		if len(received1) != 3 {
+			tests.Failed("Should have recieved only 3 as value but got %t", received1)
 		}
 		tests.Passed("Should have recieved false as value")
 
@@ -317,7 +318,7 @@ func TestFloat64SliceSliceFilter(t *testing.T) {
 	}
 }
 
-func TestFloat64SliceSliceCollectUntil(t *testing.T) {
+func TestFloat64SliceCollectUntil(t *testing.T) {
 	t.Logf("When data is collected until condition is met except when context expiration on receive")
 	{
 
@@ -377,7 +378,7 @@ func TestFloat64SliceSliceCollectUntil(t *testing.T) {
 	}
 }
 
-func TestFloat64SliceSliceMergeWithoutOrder(t *testing.T) {
+func TestFloat64SliceMergeWithoutOrder(t *testing.T) {
 	t.Logf("When data is merged from multiple channels in incoming order but context expires so nothing is received")
 	{
 
@@ -435,19 +436,14 @@ func TestFloat64SliceSliceMergeWithoutOrder(t *testing.T) {
 		}()
 
 		received := <-outgoing
-		if len(received) != 3 {
-			tests.Failed("Should have recieved 3 item slice but got %d item slice", len(received))
+		if len(received) != 9 {
+			tests.Failed("Should have recieved 9 item slice but got %d item slice", len(received))
 		}
-		tests.Passed("Should have recieved 3 item slice")
-
-		if received[0] != false && received[1] != true && received[2] != true {
-			tests.Failed("Should have recieved items in matching time.sleep order")
-		}
-		tests.Passed("Should have recieved items in matching time.sleep order")
+		tests.Passed("Should have recieved 9 item slice")
 	}
 }
 
-func TestFloat64SliceSliceMergeInOrder(t *testing.T) {
+func TestFloat64SliceMergeInOrder(t *testing.T) {
 	t.Logf("When data is merged from multiple channels in provided order but context expires so nothing is received")
 	{
 
@@ -504,19 +500,14 @@ func TestFloat64SliceSliceMergeInOrder(t *testing.T) {
 		}()
 
 		received := <-outgoing
-		if len(received) != 3 {
-			tests.Failed("Should have recieved 3 item slice but got %d item slice", len(received))
+		if len(received) != 9 {
+			tests.Failed("Should have recieved 9 item slice but got %d item slice", len(received))
 		}
-		tests.Passed("Should have recieved 3 item slice")
-
-		if received[0] != true && received[1] != true && received[2] != false {
-			tests.Failed("Should have recieved items in matching provided order")
-		}
-		tests.Passed("Should have recieved items in matching provided order")
+		tests.Passed("Should have recieved 9 item slice")
 	}
 }
 
-func TestFloat64SliceSliceCombinePartiallyWithoutOrder(t *testing.T) {
+func TestFloat64SliceCombinePartiallyWithoutOrder(t *testing.T) {
 	t.Logf("When data is combined from multiple channels without provided order but context expires so nothing is received")
 	{
 
@@ -578,14 +569,10 @@ func TestFloat64SliceSliceCombinePartiallyWithoutOrder(t *testing.T) {
 		}
 		tests.Passed("Should have recieved 3 item slice")
 
-		if received[0][0] != true && received[1][0] != true && received[2][0] != false {
-			tests.Failed("Should have recieved items in matching provided order")
-		}
-		tests.Passed("Should have recieved items in matching provided order")
 	}
 }
 
-func TestFloat64SliceSliceCombineWithoutOrder(t *testing.T) {
+func TestFloat64SliceCombineWithoutOrder(t *testing.T) {
 	t.Logf("When data is combined from multiple channels in incoming order but context expires so nothing is received")
 	{
 
@@ -648,14 +635,10 @@ func TestFloat64SliceSliceCombineWithoutOrder(t *testing.T) {
 		}
 		tests.Passed("Should have recieved 3 item slice")
 
-		if received[0][0] != false && received[1][0] != true && received[2][0] != true {
-			tests.Failed("Should have recieved items in matching time.sleep order")
-		}
-		tests.Passed("Should have recieved items in matching time.sleep order")
 	}
 }
 
-func TestFloat64SliceSliceCombineInOrder(t *testing.T) {
+func TestFloat64SliceCombineInOrder(t *testing.T) {
 	t.Logf("When data is merged from multiple channels in provided order but context expires so nothing is received")
 	{
 
@@ -716,15 +699,10 @@ func TestFloat64SliceSliceCombineInOrder(t *testing.T) {
 			tests.Failed("Should have recieved 3 item slice but got %d item slice", len(received))
 		}
 		tests.Passed("Should have recieved 3 item slice")
-
-		if received[0][0] != true && received[1][0] != true && received[2][0] != false {
-			tests.Failed("Should have recieved items in matching provided order")
-		}
-		tests.Passed("Should have recieved items in matching provided order")
 	}
 }
 
-func TestFloat64SliceSliceCombineInPartialOrder(t *testing.T) {
+func TestFloat64SliceCombineInPartialOrder(t *testing.T) {
 	t.Logf("When data is combined from multiple channels in provided order but context expires so nothing is received")
 	{
 
@@ -787,15 +765,11 @@ func TestFloat64SliceSliceCombineInPartialOrder(t *testing.T) {
 		}
 		tests.Passed("Should have recieved 3 item slice")
 
-		if received[0][0] != true && received[1][0] != true && received[2][0] != false {
-			tests.Failed("Should have recieved items in matching provided order")
-		}
-		tests.Passed("Should have recieved items in matching provided order")
 	}
 }
 
-func TestFloat64SliceSliceDistributor(t *testing.T) {
-	dist := services.NewFloat64SliceSliceDisributor(0, 1*time.Second)
+func TestFloat64SliceDistributor(t *testing.T) {
+	dist := services.NewFloat64SliceDisributor(0, 1*time.Second)
 	dist.Start()
 
 	incoming := make(chan []float64, 1)

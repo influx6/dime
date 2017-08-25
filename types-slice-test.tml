@@ -7,7 +7,7 @@ import (
 	"github.com/influx6/faux/tests"
 )
 
-func Test{{sel "Name"}}SliceCollect(t *testing.T) {
+func Test{{sel "Name"}}Collect(t *testing.T) {
 	t.Logf("When all data is received before 3 second")
 	{
 
@@ -252,7 +252,7 @@ func Test{{sel "Name"}}SliceCollect(t *testing.T) {
 	}
 }
 
-func Test{{sel "Name"}}SlicePartialCollect(t *testing.T) {
+func Test{{sel "Name"}}PartialCollect(t *testing.T) {
 	t.Logf("When all data is received before 3 second")
 	{
 
@@ -510,7 +510,7 @@ func Test{{sel "Name"}}SlicePartialCollect(t *testing.T) {
 	}
 }
 
-func Test{{sel "Name"}}SliceMutate(t *testing.T) {
+func Test{{sel "Name"}}Mutate(t *testing.T) {
 	t.Logf("When data is mutated but not received due to context expiration on receive")
 	{
 
@@ -615,7 +615,7 @@ func Test{{sel "Name"}}SliceMutate(t *testing.T) {
 	}
 }
 
-func Test{{sel "Name"}}SliceFilter(t *testing.T) {
+func Test{{sel "Name"}}Filter(t *testing.T) {
 	t.Logf("When data is filtered but not received due to context expiration on receive")
 	{
 
@@ -625,8 +625,9 @@ func Test{{sel "Name"}}SliceFilter(t *testing.T) {
 		incoming := make(chan {{sel "Type"}}, 0)
 		defer close(incoming)
 
-		outgoing := services.{{sel "Name"}}Filter(ctx, 2*time.Millisecond, func(item {{sel "Type"}}) bool { return true }, incoming)
-
+		outgoing := services.{{sel "Name"}}Filter(ctx, 2*time.Millisecond, func(item {{sel "Type"}}) bool {
+			return true
+		}, incoming)
 		_, ok := <-outgoing
 		if ok {
 			tests.Failed("Should have recieved close signal due to context expiration")
@@ -642,13 +643,13 @@ func Test{{sel "Name"}}SliceFilter(t *testing.T) {
 
 		incoming := make(chan {{sel "Type"}}, 0)
 		outgoing := services.{{sel "Name"}}Filter(ctx, 10*time.Millisecond, func(item {{sel "Type"}}) bool {
-			return item[0] == false
+			return true
 		}, incoming)
 
 		go func() {
 			defer close(incoming)
 
-			for i := 2; i > 0; i-- {
+			for i := 1; i > 0; i-- {
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
@@ -707,8 +708,8 @@ func Test{{sel "Name"}}SliceFilter(t *testing.T) {
 		}()
 
 		received1 := <-outgoing
-		if len(received1) != 1 {
-			tests.Failed("Should have recieved only 1 as value but got %t", received1)
+		if len(received1) != 3 {
+			tests.Failed("Should have recieved only 3 as value but got %t", received1)
 		}
 		tests.Passed("Should have recieved false as value")
 
@@ -720,7 +721,7 @@ func Test{{sel "Name"}}SliceFilter(t *testing.T) {
 	}
 }
 
-func Test{{sel "Name"}}SliceCollectUntil(t *testing.T) {
+func Test{{sel "Name"}}CollectUntil(t *testing.T) {
 	t.Logf("When data is collected until condition is met except when context expiration on receive")
 	{
 
@@ -831,7 +832,7 @@ func Test{{sel "Name"}}SliceCollectUntil(t *testing.T) {
 	}
 }
 
-func Test{{sel "Name"}}SliceMergeWithoutOrder(t *testing.T) {
+func Test{{sel "Name"}}MergeWithoutOrder(t *testing.T) {
 	t.Logf("When data is merged from multiple channels in incoming order but context expires so nothing is received")
 	{
 
@@ -1042,19 +1043,14 @@ func Test{{sel "Name"}}SliceMergeWithoutOrder(t *testing.T) {
 		}()
 
 		received := <-outgoing
-		if len(received) != 3 {
-			tests.Failed("Should have recieved 3 item slice but got %d item slice", len(received))
+		if len(received) != 9 {
+			tests.Failed("Should have recieved 9 item slice but got %d item slice", len(received))
 		}
-		tests.Passed("Should have recieved 3 item slice")
-
-		if received[0] != false && received[1] != true && received[2] != true {
-			tests.Failed("Should have recieved items in matching time.sleep order")
-		}
-		tests.Passed("Should have recieved items in matching time.sleep order")
+		tests.Passed("Should have recieved 9 item slice")
 	}
 }
 
-func Test{{sel "Name"}}SliceMergeInOrder(t *testing.T) {
+func Test{{sel "Name"}}MergeInOrder(t *testing.T) {
 	t.Logf("When data is merged from multiple channels in provided order but context expires so nothing is received")
 	{
 
@@ -1264,19 +1260,14 @@ func Test{{sel "Name"}}SliceMergeInOrder(t *testing.T) {
 		}()
 
 		received := <-outgoing
-		if len(received) != 3 {
-			tests.Failed("Should have recieved 3 item slice but got %d item slice", len(received))
+		if len(received) != 9 {
+			tests.Failed("Should have recieved 9 item slice but got %d item slice", len(received))
 		}
-		tests.Passed("Should have recieved 3 item slice")
-
-		if received[0] != true && received[1] != true && received[2] != false {
-			tests.Failed("Should have recieved items in matching provided order")
-		}
-		tests.Passed("Should have recieved items in matching provided order")
+		tests.Passed("Should have recieved 9 item slice")
 	}
 }
 
-func Test{{sel "Name"}}SliceCombinePartiallyWithoutOrder(t *testing.T) {
+func Test{{sel "Name"}}CombinePartiallyWithoutOrder(t *testing.T) {
 	t.Logf("When data is combined from multiple channels without provided order but context expires so nothing is received")
 	{
 
@@ -1491,14 +1482,10 @@ func Test{{sel "Name"}}SliceCombinePartiallyWithoutOrder(t *testing.T) {
 		}
 		tests.Passed("Should have recieved 3 item slice")
 
-		if received[0][0] != true && received[1][0] != true && received[2][0] != false {
-			tests.Failed("Should have recieved items in matching provided order")
-		}
-		tests.Passed("Should have recieved items in matching provided order")
 	}
 }
 
-func Test{{sel "Name"}}SliceCombineWithoutOrder(t *testing.T) {
+func Test{{sel "Name"}}CombineWithoutOrder(t *testing.T) {
 	t.Logf("When data is combined from multiple channels in incoming order but context expires so nothing is received")
 	{
 
@@ -1714,14 +1701,10 @@ func Test{{sel "Name"}}SliceCombineWithoutOrder(t *testing.T) {
 		}
 		tests.Passed("Should have recieved 3 item slice")
 
-		if received[0][0] != false && received[1][0] != true && received[2][0] != true {
-			tests.Failed("Should have recieved items in matching time.sleep order")
-		}
-		tests.Passed("Should have recieved items in matching time.sleep order")
 	}
 }
 
-func Test{{sel "Name"}}SliceCombineInOrder(t *testing.T) {
+func Test{{sel "Name"}}CombineInOrder(t *testing.T) {
 	t.Logf("When data is merged from multiple channels in provided order but context expires so nothing is received")
 	{
 
@@ -1935,15 +1918,10 @@ func Test{{sel "Name"}}SliceCombineInOrder(t *testing.T) {
 			tests.Failed("Should have recieved 3 item slice but got %d item slice", len(received))
 		}
 		tests.Passed("Should have recieved 3 item slice")
-
-		if received[0][0] != true && received[1][0] != true && received[2][0] != false {
-			tests.Failed("Should have recieved items in matching provided order")
-		}
-		tests.Passed("Should have recieved items in matching provided order")
 	}
 }
 
-func Test{{sel "Name"}}SliceCombineInPartialOrder(t *testing.T) {
+func Test{{sel "Name"}}CombineInPartialOrder(t *testing.T) {
 	t.Logf("When data is combined from multiple channels in provided order but context expires so nothing is received")
 	{
 
@@ -2159,15 +2137,11 @@ func Test{{sel "Name"}}SliceCombineInPartialOrder(t *testing.T) {
 		}
 		tests.Passed("Should have recieved 3 item slice")
 
-		if received[0][0] != true && received[1][0] != true && received[2][0] != false {
-			tests.Failed("Should have recieved items in matching provided order")
-		}
-		tests.Passed("Should have recieved items in matching provided order")
 	}
 }
 
-func Test{{sel "Name"}}SliceDistributor(t *testing.T) {
-	dist := services.New{{sel "Name"}}SliceDisributor(0, 1*time.Second)
+func Test{{sel "Name"}}Distributor(t *testing.T) {
+	dist := services.New{{sel "Name"}}Disributor(0, 1*time.Second)
 	dist.Start()
 
 	incoming := make(chan {{sel "Type"}}, 1)
