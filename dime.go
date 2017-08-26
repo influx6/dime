@@ -43,6 +43,7 @@ Below are types annotations used to generate different Service types based on a 
   @templaterTypesFor(id => Service, NoAdapter => true, filename => bytes_service.go, Name => Bytes, Type => []byte)
 
   @templaterTypesFor(id => Service, filename => float64_service.go, Name => Float64, Type => float64)
+  @templaterTypesFor(id => ServiceTest, filename => float64_service_test.go, Name => Float64, Type => float64)
   @templaterTypesFor(id => Service, filename => float64_slice_service.go, Name => Float64Slice, Type => []float64)
   @templaterTypesFor(id => ServiceSliceTest, filename => float64_slice_service_test.go, Name => Float64Slice, Type => []float64)
 
