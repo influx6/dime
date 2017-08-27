@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./uint8_service.go -toDir ./impl/uint8
 
 // UInt8FromByteAdapter defines a function that that will take a channel of bytes and return a channel of uint8.
-type UInt8FromByteAdapterWithContext func(context.Context, chan []byte) chan uint8
+type UInt8FromByteAdapterWithContext func(CancelContext, chan []byte) chan uint8
 
 // UInt8ToByteAdapter defines a function that that will take a channel of bytes and return a channel of uint8.
-type UInt8ToByteAdapter func(context.Context, chan uint8) chan []byte
+type UInt8ToByteAdapter func(CancelContext, chan uint8) chan []byte
 
 // UInt8PartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func UInt8PartialCollect(ctx context.Context, waitTime time.Duration, in chan uint8) chan []uint8 {
+func UInt8PartialCollect(ctx CancelContext, waitTime time.Duration, in chan uint8) chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func UInt8PartialCollect(ctx context.Context, waitTime time.Duration, in chan ui
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func UInt8Collect(ctx context.Context, waitTime time.Duration, in chan uint8) chan []uint8 {
+func UInt8Collect(ctx CancelContext, waitTime time.Duration, in chan uint8) chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func UInt8Collect(ctx context.Context, waitTime time.Duration, in chan uint8) ch
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func UInt8Mutate(ctx context.Context, waitTime time.Duration, mutateFn func(uint8) uint8, in chan uint8) chan uint8 {
+func UInt8Mutate(ctx CancelContext, waitTime time.Duration, mutateFn func(uint8) uint8, in chan uint8) chan uint8 {
 	res := make(chan uint8, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func UInt8Mutate(ctx context.Context, waitTime time.Duration, mutateFn func(uint
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func UInt8Filter(ctx context.Context, waitTime time.Duration, filterFn func(uint8) bool, in chan uint8) chan uint8 {
+func UInt8Filter(ctx CancelContext, waitTime time.Duration, filterFn func(uint8) bool, in chan uint8) chan uint8 {
 	res := make(chan uint8, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func UInt8Filter(ctx context.Context, waitTime time.Duration, filterFn func(uint
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func UInt8CollectUntil(ctx context.Context, waitTime time.Duration, condition func([]uint8) bool, in chan uint8) chan []uint8 {
+func UInt8CollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]uint8) bool, in chan uint8) chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func UInt8CollectUntil(ctx context.Context, waitTime time.Duration, condition fu
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt8MergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan uint8) chan []uint8 {
+func UInt8MergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan uint8) chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func UInt8MergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, send
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt8MergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan uint8) chan []uint8 {
+func UInt8MergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan uint8) chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func UInt8MergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders .
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt8CombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan uint8) chan []uint8 {
+func UInt8CombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan uint8) chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func UInt8CombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Dur
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt8CombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan uint8) chan []uint8 {
+func UInt8CombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan uint8) chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func UInt8CombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, se
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt8CombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan uint8) chan []uint8 {
+func UInt8CombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan uint8) chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func UInt8CombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt8CombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan uint8) chan []uint8 {
+func UInt8CombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan uint8) chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	for _, elem := range senders {

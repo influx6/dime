@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./int_slice_service.go -toDir ./impl/intslice
 
 // IntSliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of []int.
-type IntSliceFromByteAdapterWithContext func(context.Context, chan []byte) chan []int
+type IntSliceFromByteAdapterWithContext func(CancelContext, chan []byte) chan []int
 
 // IntSliceToByteAdapter defines a function that that will take a channel of bytes and return a channel of []int.
-type IntSliceToByteAdapter func(context.Context, chan []int) chan []byte
+type IntSliceToByteAdapter func(CancelContext, chan []int) chan []byte
 
 // IntSlicePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func IntSlicePartialCollect(ctx context.Context, waitTime time.Duration, in chan []int) chan [][]int {
+func IntSlicePartialCollect(ctx CancelContext, waitTime time.Duration, in chan []int) chan [][]int {
 	res := make(chan [][]int, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func IntSlicePartialCollect(ctx context.Context, waitTime time.Duration, in chan
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func IntSliceCollect(ctx context.Context, waitTime time.Duration, in chan []int) chan [][]int {
+func IntSliceCollect(ctx CancelContext, waitTime time.Duration, in chan []int) chan [][]int {
 	res := make(chan [][]int, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func IntSliceCollect(ctx context.Context, waitTime time.Duration, in chan []int)
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func IntSliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func([]int) []int, in chan []int) chan []int {
+func IntSliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]int) []int, in chan []int) chan []int {
 	res := make(chan []int, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func IntSliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func([
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func IntSliceFilter(ctx context.Context, waitTime time.Duration, filterFn func([]int) bool, in chan []int) chan []int {
+func IntSliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]int) bool, in chan []int) chan []int {
 	res := make(chan []int, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func IntSliceFilter(ctx context.Context, waitTime time.Duration, filterFn func([
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func IntSliceCollectUntil(ctx context.Context, waitTime time.Duration, condition func([][]int) bool, in chan []int) chan [][]int {
+func IntSliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]int) bool, in chan []int) chan [][]int {
 	res := make(chan [][]int, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func IntSliceCollectUntil(ctx context.Context, waitTime time.Duration, condition
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntSliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []int) chan []int {
+func IntSliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []int) chan []int {
 	res := make(chan []int, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func IntSliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, s
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntSliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []int) chan []int {
+func IntSliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []int) chan []int {
 	res := make(chan []int, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func IntSliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, sender
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntSliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []int) chan [][]int {
+func IntSliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []int) chan [][]int {
 	res := make(chan [][]int, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func IntSliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntSliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []int) chan [][]int {
+func IntSliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []int) chan [][]int {
 	res := make(chan [][]int, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func IntSliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration,
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntSliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []int) chan [][]int {
+func IntSliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []int) chan [][]int {
 	res := make(chan [][]int, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func IntSliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Duratio
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntSliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []int) chan [][]int {
+func IntSliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []int) chan [][]int {
 	res := make(chan [][]int, 0)
 
 	for _, elem := range senders {

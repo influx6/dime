@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./string_service.go -toDir ./impl/string
 
 // StringFromByteAdapter defines a function that that will take a channel of bytes and return a channel of string.
-type StringFromByteAdapterWithContext func(context.Context, chan []byte) chan string
+type StringFromByteAdapterWithContext func(CancelContext, chan []byte) chan string
 
 // StringToByteAdapter defines a function that that will take a channel of bytes and return a channel of string.
-type StringToByteAdapter func(context.Context, chan string) chan []byte
+type StringToByteAdapter func(CancelContext, chan string) chan []byte
 
 // StringPartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func StringPartialCollect(ctx context.Context, waitTime time.Duration, in chan string) chan []string {
+func StringPartialCollect(ctx CancelContext, waitTime time.Duration, in chan string) chan []string {
 	res := make(chan []string, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func StringPartialCollect(ctx context.Context, waitTime time.Duration, in chan s
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func StringCollect(ctx context.Context, waitTime time.Duration, in chan string) chan []string {
+func StringCollect(ctx CancelContext, waitTime time.Duration, in chan string) chan []string {
 	res := make(chan []string, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func StringCollect(ctx context.Context, waitTime time.Duration, in chan string) 
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func StringMutate(ctx context.Context, waitTime time.Duration, mutateFn func(string) string, in chan string) chan string {
+func StringMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(string) string, in chan string) chan string {
 	res := make(chan string, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func StringMutate(ctx context.Context, waitTime time.Duration, mutateFn func(str
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func StringFilter(ctx context.Context, waitTime time.Duration, filterFn func(string) bool, in chan string) chan string {
+func StringFilter(ctx CancelContext, waitTime time.Duration, filterFn func(string) bool, in chan string) chan string {
 	res := make(chan string, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func StringFilter(ctx context.Context, waitTime time.Duration, filterFn func(str
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func StringCollectUntil(ctx context.Context, waitTime time.Duration, condition func([]string) bool, in chan string) chan []string {
+func StringCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]string) bool, in chan string) chan []string {
 	res := make(chan []string, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func StringCollectUntil(ctx context.Context, waitTime time.Duration, condition f
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan string) chan []string {
+func StringMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan string) chan []string {
 	res := make(chan []string, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func StringMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, sen
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan string) chan []string {
+func StringMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan string) chan []string {
 	res := make(chan []string, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func StringMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan string) chan []string {
+func StringCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan string) chan []string {
 	res := make(chan []string, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func StringCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Du
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan string) chan []string {
+func StringCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan string) chan []string {
 	res := make(chan []string, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func StringCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, s
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan string) chan []string {
+func StringCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan string) chan []string {
 	res := make(chan []string, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func StringCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration,
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan string) chan []string {
+func StringCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan string) chan []string {
 	res := make(chan []string, 0)
 
 	for _, elem := range senders {

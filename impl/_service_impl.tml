@@ -1,0 +1,144 @@
+
+import (
+	"time"
+	"github.com/influx6/dime/services"
+)
+
+
+// {{sel "Name"}} implements a dime.MonoByteService for reading from os.Stdin and writing to os.Stdout.
+// It allows us expose the stdout as a stream of continouse bytes to be read and written to.
+type {{sel "Name"}} struct {
+	pub     *services.BytesDistributor
+	pubErrs *services.ErrorDistributor
+
+	stopped  chan struct{}
+	incoming chan {{sel "Type"}}
+	writers  chan chan {{sel "Type"}}
+}
+
+// New{{sel "Name"}} returns a new instance of a StdOutService.
+func New{{sel "Name"}}(buffer int, maxWaitingTime time.Duration) *{{sel "Name"}} {
+	pub := services.NewBytesDisributor(buffer, maxWaitingTime)
+	pubErr := services.NewErrorDisributor(buffer, maxWaitingTime)
+
+	defer pubErr.Start()
+	defer pub.Start()
+
+	stdServ := {{sel "Name"}}{
+		pub:      pub,
+		pubErrs:  pubErr,
+		stopped:  make(chan struct{}, 0),
+		incoming: make(chan {{sel "Type"}}, 0),
+		writers:  make(chan chan {{sel "Type"}}, 0),
+	}
+
+	go stdServ.runReader()
+	go stdServ.runWriter()
+
+	return &stdServ
+}
+
+// Done returns a channel which will be closed once the service is stopped.
+func (std *{{sel "Name"}}) Done() chan struct{} {
+	return std.stopped
+}
+
+// Stop ends all operations of the service.
+func (std *{{sel "Name"}}) Stop() error {
+	close(std.stopped)
+
+	// Clear all pending subscribers.
+	std.pub.Clear()
+	std.pubErrs.Clear()
+
+	// Stop subscription delivery.
+	std.pub.Stop()
+	std.pubErrs.Stop()
+
+	return nil
+}
+
+// Write accepts a channel which data will be read from delivery data into the writer.
+func (std *{{sel "Name"}}) Write(in <-chan {{sel "Type"}}) error {
+	go std.lunchPublisher(in)
+	return nil
+}
+
+// launches a go-routine to write data into publisher.
+func (std *{{sel "Name"}}) lunchPublisher(in <-chan {{sel "Type"}}) {
+	t := time.NewTimer(writerWaitDuration)
+	defer t.Stop()
+
+	for {
+		select {
+		case <-std.stopped:
+			return
+		case data, ok := <-in:
+			if !ok {
+				return
+			}
+
+			std.incoming <- data
+		case <-t.C:
+			t.Reset(writerWaitDuration)
+			continue
+		}
+	}
+}
+
+// ReadErrors returns a channel for reading error information to a listener.
+func (std *{{sel "Name"}}) ReadErrors() <-chan error {
+	mc := make(chan error, 10)
+
+	std.pubErrs.Subscribe(mc)
+
+	return mc
+}
+
+// Read returns a channel for sending information to a listener.
+func (std *{{sel "Name"}}) Read() (<-chan {{sel "Type"}}, error) {
+	mc := make(chan {{sel "Type"}}, 0)
+
+	std.pub.Subscribe(mc)
+
+	return mc, nil
+}
+
+// runReader reads continously from the reader provider till io.EOF.
+func (std *{{sel "Name"}}) runReader() {
+	t := time.NewTimer(readerCloseCheckDuration)
+	defer t.Stop()
+
+
+	{
+		for {
+
+			// Validate that service has not be closed:
+			select {
+			case <-std.stopped:
+				return
+			case <-t.C:
+				t.Reset(readerCloseCheckDuration)
+				break
+			}
+
+		}
+	}
+}
+
+// runWriter handles the internal processing of  writing data into provided writer.
+func (std *{{sel "Name"}}) runWriter() {
+	{
+		for {
+			select {
+			case <-std.stopped:
+				return
+			case data, ok := <-std.incoming:
+				if !ok {
+					return
+				}
+
+			}
+		}
+	}
+}

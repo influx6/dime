@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./map_slice_service.go -toDir ./impl/mapslice
 
 // MapSliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of []map[string]string.
-type MapSliceFromByteAdapterWithContext func(context.Context, chan []byte) chan []map[string]string
+type MapSliceFromByteAdapterWithContext func(CancelContext, chan []byte) chan []map[string]string
 
 // MapSliceToByteAdapter defines a function that that will take a channel of bytes and return a channel of []map[string]string.
-type MapSliceToByteAdapter func(context.Context, chan []map[string]string) chan []byte
+type MapSliceToByteAdapter func(CancelContext, chan []map[string]string) chan []byte
 
 // MapSlicePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func MapSlicePartialCollect(ctx context.Context, waitTime time.Duration, in chan []map[string]string) chan [][]map[string]string {
+func MapSlicePartialCollect(ctx CancelContext, waitTime time.Duration, in chan []map[string]string) chan [][]map[string]string {
 	res := make(chan [][]map[string]string, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func MapSlicePartialCollect(ctx context.Context, waitTime time.Duration, in chan
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func MapSliceCollect(ctx context.Context, waitTime time.Duration, in chan []map[string]string) chan [][]map[string]string {
+func MapSliceCollect(ctx CancelContext, waitTime time.Duration, in chan []map[string]string) chan [][]map[string]string {
 	res := make(chan [][]map[string]string, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func MapSliceCollect(ctx context.Context, waitTime time.Duration, in chan []map[
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func MapSliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func([]map[string]string) []map[string]string, in chan []map[string]string) chan []map[string]string {
+func MapSliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]map[string]string) []map[string]string, in chan []map[string]string) chan []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func MapSliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func([
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func MapSliceFilter(ctx context.Context, waitTime time.Duration, filterFn func([]map[string]string) bool, in chan []map[string]string) chan []map[string]string {
+func MapSliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]map[string]string) bool, in chan []map[string]string) chan []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func MapSliceFilter(ctx context.Context, waitTime time.Duration, filterFn func([
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func MapSliceCollectUntil(ctx context.Context, waitTime time.Duration, condition func([][]map[string]string) bool, in chan []map[string]string) chan [][]map[string]string {
+func MapSliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]map[string]string) bool, in chan []map[string]string) chan [][]map[string]string {
 	res := make(chan [][]map[string]string, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func MapSliceCollectUntil(ctx context.Context, waitTime time.Duration, condition
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapSliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []map[string]string) chan []map[string]string {
+func MapSliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []map[string]string) chan []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func MapSliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, s
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapSliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []map[string]string) chan []map[string]string {
+func MapSliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []map[string]string) chan []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func MapSliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, sender
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapSliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []map[string]string) chan [][]map[string]string {
+func MapSliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []map[string]string) chan [][]map[string]string {
 	res := make(chan [][]map[string]string, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func MapSliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapSliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []map[string]string) chan [][]map[string]string {
+func MapSliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []map[string]string) chan [][]map[string]string {
 	res := make(chan [][]map[string]string, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func MapSliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration,
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapSliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []map[string]string) chan [][]map[string]string {
+func MapSliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []map[string]string) chan [][]map[string]string {
 	res := make(chan [][]map[string]string, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func MapSliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Duratio
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapSliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []map[string]string) chan [][]map[string]string {
+func MapSliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []map[string]string) chan [][]map[string]string {
 	res := make(chan [][]map[string]string, 0)
 
 	for _, elem := range senders {

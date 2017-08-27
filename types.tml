@@ -1,5 +1,4 @@
 import (
-	"context"
 	"time"
 	"sync/atomic"
 )
@@ -9,17 +8,17 @@ import (
 {{ $noadapter := sel "NoAdapter" }}
 {{ if eq $noadapter "" }}
 // {{ sel "Name" }}FromByteAdapter defines a function that that will take a channel of bytes and return a channel of {{ sel "Type"}}.
-	type {{ sel "Name" }}FromByteAdapterWithContext func(context.Context, chan []byte) chan {{sel "Type"}}
+	type {{ sel "Name" }}FromByteAdapterWithContext func(CancelContext, chan []byte) chan {{sel "Type"}}
 
 // {{ sel "Name" }}ToByteAdapter defines a function that that will take a channel of bytes and return a channel of {{ sel "Type"}}.
-	type {{ sel "Name" }}ToByteAdapter func(context.Context, chan {{sel "Type"}}) chan []byte
+	type {{ sel "Name" }}ToByteAdapter func(CancelContext, chan {{sel "Type"}}) chan []byte
 
 {{ end}}
 
 // {{sel "Name"}}PartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func {{sel "Name"}}PartialCollect(ctx context.Context, waitTime time.Duration, in chan {{ sel "Type" }}) chan []{{sel "Type"}} {
+func {{sel "Name"}}PartialCollect(ctx CancelContext, waitTime time.Duration, in chan {{ sel "Type" }}) chan []{{sel "Type"}} {
 	res := make(chan []{{sel "Type"}}, 0)
 
 	go func() {
@@ -57,7 +56,7 @@ func {{sel "Name"}}PartialCollect(ctx context.Context, waitTime time.Duration, i
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func {{sel "Name"}}Collect(ctx context.Context, waitTime time.Duration, in chan {{ sel "Type" }}) chan []{{sel "Type"}} {
+func {{sel "Name"}}Collect(ctx CancelContext, waitTime time.Duration, in chan {{ sel "Type" }}) chan []{{sel "Type"}} {
 	res := make(chan []{{sel "Type"}}, 0)
 
 	go func() {
@@ -94,7 +93,7 @@ func {{sel "Name"}}Collect(ctx context.Context, waitTime time.Duration, in chan 
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func {{sel "Name"}}Mutate(ctx context.Context, waitTime time.Duration, mutateFn func({{ sel "Type" }}) {{sel "Type"}}, in chan {{ sel "Type" }}) chan {{sel "Type"}} {
+func {{sel "Name"}}Mutate(ctx CancelContext, waitTime time.Duration, mutateFn func({{ sel "Type" }}) {{sel "Type"}}, in chan {{ sel "Type" }}) chan {{sel "Type"}} {
 	res := make(chan {{sel "Type"}}, 0)
 
 	go func() {
@@ -127,7 +126,7 @@ func {{sel "Name"}}Mutate(ctx context.Context, waitTime time.Duration, mutateFn 
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func {{sel "Name"}}Filter(ctx context.Context, waitTime time.Duration, filterFn func({{ sel "Type" }}) bool, in chan {{ sel "Type" }}) chan {{sel "Type"}} {
+func {{sel "Name"}}Filter(ctx CancelContext, waitTime time.Duration, filterFn func({{ sel "Type" }}) bool, in chan {{ sel "Type" }}) chan {{sel "Type"}} {
 	res := make(chan {{sel "Type"}}, 0)
 
 	go func() {
@@ -166,7 +165,7 @@ func {{sel "Name"}}Filter(ctx context.Context, waitTime time.Duration, filterFn 
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func {{sel "Name"}}CollectUntil(ctx context.Context, waitTime time.Duration, condition func([]{{sel "Type"}}) bool, in chan {{ sel "Type" }}) chan []{{sel "Type"}} {
+func {{sel "Name"}}CollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]{{sel "Type"}}) bool, in chan {{ sel "Type" }}) chan []{{sel "Type"}} {
 	res := make(chan []{{sel "Type"}}, 0)
 
 	go func() {
@@ -221,7 +220,7 @@ func {{sel "Name"}}CollectUntil(ctx context.Context, waitTime time.Duration, con
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func {{sel "Name"}}MergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan {{ sel "Type" }}) chan []{{ if hasPrefix (sel "Type") "[]" }} {{ (trimPrefix (sel "Type") "[]") }} {{ else }} {{ sel "Type" }} {{end}} {
+func {{sel "Name"}}MergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan {{ sel "Type" }}) chan []{{ if hasPrefix (sel "Type") "[]" }} {{ (trimPrefix (sel "Type") "[]") }} {{ else }} {{ sel "Type" }} {{end}} {
 	res := make(chan []{{ if hasPrefix (sel "Type") "[]" }} {{ (trimPrefix (sel "Type") "[]") }} {{ else }} {{ sel "Type" }} {{end}}, 0)
 
 	for _, elem := range senders {
@@ -316,7 +315,7 @@ func {{sel "Name"}}MergeWithoutOrder(ctx context.Context, maxWaitTime time.Durat
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func {{sel "Name"}}MergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan {{ sel "Type" }}) chan []{{ if hasPrefix (sel "Type") "[]" }} {{ (trimPrefix (sel "Type") "[]") }} {{ else }} {{ sel "Type" }} {{end}} {
+func {{sel "Name"}}MergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan {{ sel "Type" }}) chan []{{ if hasPrefix (sel "Type") "[]" }} {{ (trimPrefix (sel "Type") "[]") }} {{ else }} {{ sel "Type" }} {{end}} {
 	res := make(chan []{{ if hasPrefix (sel "Type") "[]" }} {{ (trimPrefix (sel "Type") "[]") }} {{ else }} {{ sel "Type" }} {{end}}, 0)
 
 	for _, elem := range senders {
@@ -412,7 +411,7 @@ func {{sel "Name"}}MergeInOrder(ctx context.Context, maxWaitTime time.Duration, 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func {{sel "Name"}}CombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan {{sel "Type"}}) chan []{{sel "Type"}} {
+func {{sel "Name"}}CombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan {{sel "Type"}}) chan []{{sel "Type"}} {
 	res := make(chan []{{sel "Type"}}, 0)
 
 	for _, elem := range senders {
@@ -514,7 +513,7 @@ func {{sel "Name"}}CombinePartiallyWithoutOrder(ctx context.Context, maxItemWait
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func {{sel "Name"}}CombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan {{sel "Type"}}) chan []{{sel "Type"}} {
+func {{sel "Name"}}CombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan {{sel "Type"}}) chan []{{sel "Type"}} {
 	res := make(chan []{{sel "Type"}}, 0)
 
 	for _, elem := range senders {
@@ -605,7 +604,7 @@ func {{sel "Name"}}CombineWithoutOrder(ctx context.Context, maxItemWait time.Dur
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func {{sel "Name"}}CombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan {{sel "Type"}}) chan []{{sel "Type"}} {
+func {{sel "Name"}}CombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan {{sel "Type"}}) chan []{{sel "Type"}} {
 	res := make(chan []{{sel "Type"}}, 0)
 
 	for _, elem := range senders {
@@ -708,7 +707,7 @@ func {{sel "Name"}}CombineInPartialOrder(ctx context.Context, maxItemWait time.D
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func {{sel "Name"}}CombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan {{sel "Type"}}) chan []{{sel "Type"}} {
+func {{sel "Name"}}CombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan {{sel "Type"}}) chan []{{sel "Type"}} {
 	res := make(chan []{{sel "Type"}}, 0)
 
 	for _, elem := range senders {

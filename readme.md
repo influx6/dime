@@ -24,52 +24,6 @@ Where each `@templateTypesFor` dictate the giving details needed to use the defa
 
 _To learn more about annotation code generation, see [Moz](https://github.com/influx6/moz)._
 
-## A Dime Service
-A service in Dime, is simply any implementation that match a giving interface type, such has the [ByteService](./services/byte_service.go).
-
-```go
-type MonoBytesService interface {
-	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
-	ReadErrors() <-chan error
-
-	// Read will return a channel which will allow reading from the Service until it it is closed.
-	Read() (<-chan []byte, error)
-
-	// Receive will take the channel, which will be writing into the Service for it's internal processing
-	// and the Service will continue to read form the channel till the channel is closed.
-	// Useful for collating/collecting services.
-	Write(<-chan []byte) error
-
-	// Done defines a signal to other pending services to know whether the Service is still servicing
-	// request.
-	Done() chan struct{}
-
-	// Service defines a function to be called to stop the Service internal operation and to close
-	// all read/write operations.
-	Stop() error
-}
-
-type BytesService interface {
-	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
-	ReadErrors() <-chan error
-
-	// Read will return a channel which will allow reading from the Service until it it is closed.
-	Read(string) (<-chan []byte, error)
-
-	// Receive will take the channel, which will be writing into the Service for it's internal processing
-	// and the Service will continue to read form the channel till the channel is closed.
-	// Useful for collating/collecting services.
-	Write(string, <-chan []byte) error
-
-	// Done defines a signal to other pending services to know whether the Service is still servicing
-	// request.
-	Done() chan struct{}
-
-	// Service defines a function to be called to stop the Service internal operation and to close
-	// all read/write operations.
-	Stop() error
-}
-```
 
 ## A Dime Adapter
 An adapter in Dime, is simply any function that can take a channel of a type and return a channel of another type, where by it does certain transformation within to produce such a conversion. As an example the [BoolService](./services/bool_service.go) adapters.
@@ -77,11 +31,61 @@ An adapter in Dime, is simply any function that can take a channel of a type and
 
 ```go
 // BoolFromByteAdapter defines a function that that will take a channel of bytes and return a channel of bool.
-type BoolFromByteAdapter func(context.Context, chan []byte) chan bool
+type BoolFromByteAdapterWithContext func(CancelContext, chan []byte) chan bool
 
 // BoolToByteAdapter defines a function that that will take a channel of bytes and return a channel of bool.
-type BoolToByteAdapter func(context.Context, chan bool) chan []byte
+type BoolToByteAdapter func(CancelContext, chan bool) chan []byte
 ```
 
-## Service Interfaces
-Dime contains generated code for all base types supported by go for usage outside of the package in [Services](./services) directory.
+## A Dime Service
+A service in Dime, is simply any implementation that match a giving interface type, such has the [ByteService](./services/byte_service.go).
+
+_Dime contains auto-generated code for all go's base types supported for usage outside of the package in [Services](./services) directory._
+
+```go
+type MonoBoolService interface {
+	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
+	ReadErrors() <-chan error
+
+	// Read will return a channel which will allow reading from the Service until it it is closed.
+	Read() (<-chan bool, error)
+
+	// Receive will take the channel, which will be writing into the Service for it's internal processing
+	// and the Service will continue to read form the channel till the channel is closed.
+	// Useful for collating/collecting services.
+	Write(<-chan bool) error
+
+	// Done defines a signal to other pending services to know whether the Service is still servicing
+	// request.
+	Done() chan struct{}
+
+	// Service defines a function to be called to stop the Service internal operation and to close
+	// all read/write operations.
+	Stop() error
+}
+```
+
+```go
+type BoolService interface {
+	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
+	ReadErrors() <-chan error
+
+	// Read will return a channel which will allow reading from the Service until it it is closed.
+	Read(string) (<-chan bool, error)
+
+	// Receive will take the channel, which will be writing into the Service for it's internal processing
+	// and the Service will continue to read form the channel till the channel is closed.
+	// Useful for collating/collecting services.
+	Write(string, <-chan bool) error
+
+	// Done defines a signal to other pending services to know whether the Service is still servicing
+	// request.
+	Done() chan struct{}
+
+	// Service defines a function to be called to stop the Service internal operation and to close
+	// all read/write operations.
+	Stop() error
+}
+
+```
+

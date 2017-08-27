@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./uint_slice_service.go -toDir ./impl/uintslice
 
 // UIntSliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of []uint.
-type UIntSliceFromByteAdapterWithContext func(context.Context, chan []byte) chan []uint
+type UIntSliceFromByteAdapterWithContext func(CancelContext, chan []byte) chan []uint
 
 // UIntSliceToByteAdapter defines a function that that will take a channel of bytes and return a channel of []uint.
-type UIntSliceToByteAdapter func(context.Context, chan []uint) chan []byte
+type UIntSliceToByteAdapter func(CancelContext, chan []uint) chan []byte
 
 // UIntSlicePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func UIntSlicePartialCollect(ctx context.Context, waitTime time.Duration, in chan []uint) chan [][]uint {
+func UIntSlicePartialCollect(ctx CancelContext, waitTime time.Duration, in chan []uint) chan [][]uint {
 	res := make(chan [][]uint, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func UIntSlicePartialCollect(ctx context.Context, waitTime time.Duration, in cha
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func UIntSliceCollect(ctx context.Context, waitTime time.Duration, in chan []uint) chan [][]uint {
+func UIntSliceCollect(ctx CancelContext, waitTime time.Duration, in chan []uint) chan [][]uint {
 	res := make(chan [][]uint, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func UIntSliceCollect(ctx context.Context, waitTime time.Duration, in chan []uin
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func UIntSliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func([]uint) []uint, in chan []uint) chan []uint {
+func UIntSliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]uint) []uint, in chan []uint) chan []uint {
 	res := make(chan []uint, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func UIntSliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func(
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func UIntSliceFilter(ctx context.Context, waitTime time.Duration, filterFn func([]uint) bool, in chan []uint) chan []uint {
+func UIntSliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]uint) bool, in chan []uint) chan []uint {
 	res := make(chan []uint, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func UIntSliceFilter(ctx context.Context, waitTime time.Duration, filterFn func(
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func UIntSliceCollectUntil(ctx context.Context, waitTime time.Duration, condition func([][]uint) bool, in chan []uint) chan [][]uint {
+func UIntSliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]uint) bool, in chan []uint) chan [][]uint {
 	res := make(chan [][]uint, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func UIntSliceCollectUntil(ctx context.Context, waitTime time.Duration, conditio
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UIntSliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []uint) chan []uint {
+func UIntSliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []uint) chan []uint {
 	res := make(chan []uint, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func UIntSliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UIntSliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []uint) chan []uint {
+func UIntSliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []uint) chan []uint {
 	res := make(chan []uint, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func UIntSliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, sende
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UIntSliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []uint) chan [][]uint {
+func UIntSliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []uint) chan [][]uint {
 	res := make(chan [][]uint, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func UIntSliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UIntSliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []uint) chan [][]uint {
+func UIntSliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []uint) chan [][]uint {
 	res := make(chan [][]uint, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func UIntSliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UIntSliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []uint) chan [][]uint {
+func UIntSliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []uint) chan [][]uint {
 	res := make(chan [][]uint, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func UIntSliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Durati
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UIntSliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []uint) chan [][]uint {
+func UIntSliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []uint) chan [][]uint {
 	res := make(chan [][]uint, 0)
 
 	for _, elem := range senders {

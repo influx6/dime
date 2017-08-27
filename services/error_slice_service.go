@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./error_slice_service.go -toDir ./impl/errorslice
 
 // ErrorSliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of []error.
-type ErrorSliceFromByteAdapterWithContext func(context.Context, chan []byte) chan []error
+type ErrorSliceFromByteAdapterWithContext func(CancelContext, chan []byte) chan []error
 
 // ErrorSliceToByteAdapter defines a function that that will take a channel of bytes and return a channel of []error.
-type ErrorSliceToByteAdapter func(context.Context, chan []error) chan []byte
+type ErrorSliceToByteAdapter func(CancelContext, chan []error) chan []byte
 
 // ErrorSlicePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func ErrorSlicePartialCollect(ctx context.Context, waitTime time.Duration, in chan []error) chan [][]error {
+func ErrorSlicePartialCollect(ctx CancelContext, waitTime time.Duration, in chan []error) chan [][]error {
 	res := make(chan [][]error, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func ErrorSlicePartialCollect(ctx context.Context, waitTime time.Duration, in ch
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func ErrorSliceCollect(ctx context.Context, waitTime time.Duration, in chan []error) chan [][]error {
+func ErrorSliceCollect(ctx CancelContext, waitTime time.Duration, in chan []error) chan [][]error {
 	res := make(chan [][]error, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func ErrorSliceCollect(ctx context.Context, waitTime time.Duration, in chan []er
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func ErrorSliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func([]error) []error, in chan []error) chan []error {
+func ErrorSliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]error) []error, in chan []error) chan []error {
 	res := make(chan []error, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func ErrorSliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func ErrorSliceFilter(ctx context.Context, waitTime time.Duration, filterFn func([]error) bool, in chan []error) chan []error {
+func ErrorSliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]error) bool, in chan []error) chan []error {
 	res := make(chan []error, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func ErrorSliceFilter(ctx context.Context, waitTime time.Duration, filterFn func
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func ErrorSliceCollectUntil(ctx context.Context, waitTime time.Duration, condition func([][]error) bool, in chan []error) chan [][]error {
+func ErrorSliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]error) bool, in chan []error) chan [][]error {
 	res := make(chan [][]error, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func ErrorSliceCollectUntil(ctx context.Context, waitTime time.Duration, conditi
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorSliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []error) chan []error {
+func ErrorSliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []error) chan []error {
 	res := make(chan []error, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func ErrorSliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration,
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorSliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []error) chan []error {
+func ErrorSliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []error) chan []error {
 	res := make(chan []error, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func ErrorSliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, send
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorSliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []error) chan [][]error {
+func ErrorSliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []error) chan [][]error {
 	res := make(chan [][]error, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func ErrorSliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait tim
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorSliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []error) chan [][]error {
+func ErrorSliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []error) chan [][]error {
 	res := make(chan [][]error, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func ErrorSliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duratio
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorSliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []error) chan [][]error {
+func ErrorSliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []error) chan [][]error {
 	res := make(chan [][]error, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func ErrorSliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Durat
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorSliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []error) chan [][]error {
+func ErrorSliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []error) chan [][]error {
 	res := make(chan [][]error, 0)
 
 	for _, elem := range senders {

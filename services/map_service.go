@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./map_service.go -toDir ./impl/map
 
 // MapFromByteAdapter defines a function that that will take a channel of bytes and return a channel of map[string]string.
-type MapFromByteAdapterWithContext func(context.Context, chan []byte) chan map[string]string
+type MapFromByteAdapterWithContext func(CancelContext, chan []byte) chan map[string]string
 
 // MapToByteAdapter defines a function that that will take a channel of bytes and return a channel of map[string]string.
-type MapToByteAdapter func(context.Context, chan map[string]string) chan []byte
+type MapToByteAdapter func(CancelContext, chan map[string]string) chan []byte
 
 // MapPartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func MapPartialCollect(ctx context.Context, waitTime time.Duration, in chan map[string]string) chan []map[string]string {
+func MapPartialCollect(ctx CancelContext, waitTime time.Duration, in chan map[string]string) chan []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func MapPartialCollect(ctx context.Context, waitTime time.Duration, in chan map[
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func MapCollect(ctx context.Context, waitTime time.Duration, in chan map[string]string) chan []map[string]string {
+func MapCollect(ctx CancelContext, waitTime time.Duration, in chan map[string]string) chan []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func MapCollect(ctx context.Context, waitTime time.Duration, in chan map[string]
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func MapMutate(ctx context.Context, waitTime time.Duration, mutateFn func(map[string]string) map[string]string, in chan map[string]string) chan map[string]string {
+func MapMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(map[string]string) map[string]string, in chan map[string]string) chan map[string]string {
 	res := make(chan map[string]string, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func MapMutate(ctx context.Context, waitTime time.Duration, mutateFn func(map[st
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func MapFilter(ctx context.Context, waitTime time.Duration, filterFn func(map[string]string) bool, in chan map[string]string) chan map[string]string {
+func MapFilter(ctx CancelContext, waitTime time.Duration, filterFn func(map[string]string) bool, in chan map[string]string) chan map[string]string {
 	res := make(chan map[string]string, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func MapFilter(ctx context.Context, waitTime time.Duration, filterFn func(map[st
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func MapCollectUntil(ctx context.Context, waitTime time.Duration, condition func([]map[string]string) bool, in chan map[string]string) chan []map[string]string {
+func MapCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]map[string]string) bool, in chan map[string]string) chan []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func MapCollectUntil(ctx context.Context, waitTime time.Duration, condition func
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan map[string]string) chan []map[string]string {
+func MapMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan map[string]string) chan []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func MapMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, sender
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan map[string]string) chan []map[string]string {
+func MapMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan map[string]string) chan []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func MapMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan map[string]string) chan []map[string]string {
+func MapCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan map[string]string) chan []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func MapCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Durat
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan map[string]string) chan []map[string]string {
+func MapCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan map[string]string) chan []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func MapCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, send
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan map[string]string) chan []map[string]string {
+func MapCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan map[string]string) chan []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func MapCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, se
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan map[string]string) chan []map[string]string {
+func MapCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan map[string]string) chan []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	for _, elem := range senders {

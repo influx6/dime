@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./uint32_service.go -toDir ./impl/uint32
 
 // UInt32FromByteAdapter defines a function that that will take a channel of bytes and return a channel of uint32.
-type UInt32FromByteAdapterWithContext func(context.Context, chan []byte) chan uint32
+type UInt32FromByteAdapterWithContext func(CancelContext, chan []byte) chan uint32
 
 // UInt32ToByteAdapter defines a function that that will take a channel of bytes and return a channel of uint32.
-type UInt32ToByteAdapter func(context.Context, chan uint32) chan []byte
+type UInt32ToByteAdapter func(CancelContext, chan uint32) chan []byte
 
 // UInt32PartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func UInt32PartialCollect(ctx context.Context, waitTime time.Duration, in chan uint32) chan []uint32 {
+func UInt32PartialCollect(ctx CancelContext, waitTime time.Duration, in chan uint32) chan []uint32 {
 	res := make(chan []uint32, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func UInt32PartialCollect(ctx context.Context, waitTime time.Duration, in chan u
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func UInt32Collect(ctx context.Context, waitTime time.Duration, in chan uint32) chan []uint32 {
+func UInt32Collect(ctx CancelContext, waitTime time.Duration, in chan uint32) chan []uint32 {
 	res := make(chan []uint32, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func UInt32Collect(ctx context.Context, waitTime time.Duration, in chan uint32) 
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func UInt32Mutate(ctx context.Context, waitTime time.Duration, mutateFn func(uint32) uint32, in chan uint32) chan uint32 {
+func UInt32Mutate(ctx CancelContext, waitTime time.Duration, mutateFn func(uint32) uint32, in chan uint32) chan uint32 {
 	res := make(chan uint32, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func UInt32Mutate(ctx context.Context, waitTime time.Duration, mutateFn func(uin
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func UInt32Filter(ctx context.Context, waitTime time.Duration, filterFn func(uint32) bool, in chan uint32) chan uint32 {
+func UInt32Filter(ctx CancelContext, waitTime time.Duration, filterFn func(uint32) bool, in chan uint32) chan uint32 {
 	res := make(chan uint32, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func UInt32Filter(ctx context.Context, waitTime time.Duration, filterFn func(uin
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func UInt32CollectUntil(ctx context.Context, waitTime time.Duration, condition func([]uint32) bool, in chan uint32) chan []uint32 {
+func UInt32CollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]uint32) bool, in chan uint32) chan []uint32 {
 	res := make(chan []uint32, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func UInt32CollectUntil(ctx context.Context, waitTime time.Duration, condition f
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt32MergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan uint32) chan []uint32 {
+func UInt32MergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan uint32) chan []uint32 {
 	res := make(chan []uint32, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func UInt32MergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, sen
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt32MergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan uint32) chan []uint32 {
+func UInt32MergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan uint32) chan []uint32 {
 	res := make(chan []uint32, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func UInt32MergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt32CombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan uint32) chan []uint32 {
+func UInt32CombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan uint32) chan []uint32 {
 	res := make(chan []uint32, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func UInt32CombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Du
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt32CombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan uint32) chan []uint32 {
+func UInt32CombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan uint32) chan []uint32 {
 	res := make(chan []uint32, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func UInt32CombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, s
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt32CombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan uint32) chan []uint32 {
+func UInt32CombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan uint32) chan []uint32 {
 	res := make(chan []uint32, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func UInt32CombineInPartialOrder(ctx context.Context, maxItemWait time.Duration,
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt32CombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan uint32) chan []uint32 {
+func UInt32CombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan uint32) chan []uint32 {
 	res := make(chan []uint32, 0)
 
 	for _, elem := range senders {

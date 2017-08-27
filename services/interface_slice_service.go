@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./interface_slice_service.go -toDir ./impl/interfaceslice
 
 // InterfaceSliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of []interface{}.
-type InterfaceSliceFromByteAdapterWithContext func(context.Context, chan []byte) chan []interface{}
+type InterfaceSliceFromByteAdapterWithContext func(CancelContext, chan []byte) chan []interface{}
 
 // InterfaceSliceToByteAdapter defines a function that that will take a channel of bytes and return a channel of []interface{}.
-type InterfaceSliceToByteAdapter func(context.Context, chan []interface{}) chan []byte
+type InterfaceSliceToByteAdapter func(CancelContext, chan []interface{}) chan []byte
 
 // InterfaceSlicePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func InterfaceSlicePartialCollect(ctx context.Context, waitTime time.Duration, in chan []interface{}) chan [][]interface{} {
+func InterfaceSlicePartialCollect(ctx CancelContext, waitTime time.Duration, in chan []interface{}) chan [][]interface{} {
 	res := make(chan [][]interface{}, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func InterfaceSlicePartialCollect(ctx context.Context, waitTime time.Duration, i
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func InterfaceSliceCollect(ctx context.Context, waitTime time.Duration, in chan []interface{}) chan [][]interface{} {
+func InterfaceSliceCollect(ctx CancelContext, waitTime time.Duration, in chan []interface{}) chan [][]interface{} {
 	res := make(chan [][]interface{}, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func InterfaceSliceCollect(ctx context.Context, waitTime time.Duration, in chan 
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func InterfaceSliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func([]interface{}) []interface{}, in chan []interface{}) chan []interface{} {
+func InterfaceSliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]interface{}) []interface{}, in chan []interface{}) chan []interface{} {
 	res := make(chan []interface{}, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func InterfaceSliceMutate(ctx context.Context, waitTime time.Duration, mutateFn 
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func InterfaceSliceFilter(ctx context.Context, waitTime time.Duration, filterFn func([]interface{}) bool, in chan []interface{}) chan []interface{} {
+func InterfaceSliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]interface{}) bool, in chan []interface{}) chan []interface{} {
 	res := make(chan []interface{}, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func InterfaceSliceFilter(ctx context.Context, waitTime time.Duration, filterFn 
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func InterfaceSliceCollectUntil(ctx context.Context, waitTime time.Duration, condition func([][]interface{}) bool, in chan []interface{}) chan [][]interface{} {
+func InterfaceSliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]interface{}) bool, in chan []interface{}) chan [][]interface{} {
 	res := make(chan [][]interface{}, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func InterfaceSliceCollectUntil(ctx context.Context, waitTime time.Duration, con
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func InterfaceSliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []interface{}) chan []interface{} {
+func InterfaceSliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []interface{}) chan []interface{} {
 	res := make(chan []interface{}, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func InterfaceSliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Durat
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func InterfaceSliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []interface{}) chan []interface{} {
+func InterfaceSliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []interface{}) chan []interface{} {
 	res := make(chan []interface{}, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func InterfaceSliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func InterfaceSliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []interface{}) chan [][]interface{} {
+func InterfaceSliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []interface{}) chan [][]interface{} {
 	res := make(chan [][]interface{}, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func InterfaceSliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func InterfaceSliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []interface{}) chan [][]interface{} {
+func InterfaceSliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []interface{}) chan [][]interface{} {
 	res := make(chan [][]interface{}, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func InterfaceSliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Dur
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func InterfaceSliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []interface{}) chan [][]interface{} {
+func InterfaceSliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []interface{}) chan [][]interface{} {
 	res := make(chan [][]interface{}, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func InterfaceSliceCombineInPartialOrder(ctx context.Context, maxItemWait time.D
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func InterfaceSliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []interface{}) chan [][]interface{} {
+func InterfaceSliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []interface{}) chan [][]interface{} {
 	res := make(chan [][]interface{}, 0)
 
 	for _, elem := range senders {

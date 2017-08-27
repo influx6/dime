@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./error_service.go -toDir ./impl/error
 
 // ErrorFromByteAdapter defines a function that that will take a channel of bytes and return a channel of error.
-type ErrorFromByteAdapterWithContext func(context.Context, chan []byte) chan error
+type ErrorFromByteAdapterWithContext func(CancelContext, chan []byte) chan error
 
 // ErrorToByteAdapter defines a function that that will take a channel of bytes and return a channel of error.
-type ErrorToByteAdapter func(context.Context, chan error) chan []byte
+type ErrorToByteAdapter func(CancelContext, chan error) chan []byte
 
 // ErrorPartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func ErrorPartialCollect(ctx context.Context, waitTime time.Duration, in chan error) chan []error {
+func ErrorPartialCollect(ctx CancelContext, waitTime time.Duration, in chan error) chan []error {
 	res := make(chan []error, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func ErrorPartialCollect(ctx context.Context, waitTime time.Duration, in chan er
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func ErrorCollect(ctx context.Context, waitTime time.Duration, in chan error) chan []error {
+func ErrorCollect(ctx CancelContext, waitTime time.Duration, in chan error) chan []error {
 	res := make(chan []error, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func ErrorCollect(ctx context.Context, waitTime time.Duration, in chan error) ch
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func ErrorMutate(ctx context.Context, waitTime time.Duration, mutateFn func(error) error, in chan error) chan error {
+func ErrorMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(error) error, in chan error) chan error {
 	res := make(chan error, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func ErrorMutate(ctx context.Context, waitTime time.Duration, mutateFn func(erro
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func ErrorFilter(ctx context.Context, waitTime time.Duration, filterFn func(error) bool, in chan error) chan error {
+func ErrorFilter(ctx CancelContext, waitTime time.Duration, filterFn func(error) bool, in chan error) chan error {
 	res := make(chan error, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func ErrorFilter(ctx context.Context, waitTime time.Duration, filterFn func(erro
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func ErrorCollectUntil(ctx context.Context, waitTime time.Duration, condition func([]error) bool, in chan error) chan []error {
+func ErrorCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]error) bool, in chan error) chan []error {
 	res := make(chan []error, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func ErrorCollectUntil(ctx context.Context, waitTime time.Duration, condition fu
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan error) chan []error {
+func ErrorMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan error) chan []error {
 	res := make(chan []error, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func ErrorMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, send
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan error) chan []error {
+func ErrorMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan error) chan []error {
 	res := make(chan []error, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func ErrorMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders .
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan error) chan []error {
+func ErrorCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan error) chan []error {
 	res := make(chan []error, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func ErrorCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Dur
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan error) chan []error {
+func ErrorCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan error) chan []error {
 	res := make(chan []error, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func ErrorCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, se
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan error) chan []error {
+func ErrorCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan error) chan []error {
 	res := make(chan []error, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func ErrorCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan error) chan []error {
+func ErrorCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan error) chan []error {
 	res := make(chan []error, 0)
 
 	for _, elem := range senders {

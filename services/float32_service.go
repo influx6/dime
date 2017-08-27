@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./float32_service.go -toDir ./impl/float32
 
 // Float32FromByteAdapter defines a function that that will take a channel of bytes and return a channel of float32.
-type Float32FromByteAdapterWithContext func(context.Context, chan []byte) chan float32
+type Float32FromByteAdapterWithContext func(CancelContext, chan []byte) chan float32
 
 // Float32ToByteAdapter defines a function that that will take a channel of bytes and return a channel of float32.
-type Float32ToByteAdapter func(context.Context, chan float32) chan []byte
+type Float32ToByteAdapter func(CancelContext, chan float32) chan []byte
 
 // Float32PartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func Float32PartialCollect(ctx context.Context, waitTime time.Duration, in chan float32) chan []float32 {
+func Float32PartialCollect(ctx CancelContext, waitTime time.Duration, in chan float32) chan []float32 {
 	res := make(chan []float32, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func Float32PartialCollect(ctx context.Context, waitTime time.Duration, in chan 
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func Float32Collect(ctx context.Context, waitTime time.Duration, in chan float32) chan []float32 {
+func Float32Collect(ctx CancelContext, waitTime time.Duration, in chan float32) chan []float32 {
 	res := make(chan []float32, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func Float32Collect(ctx context.Context, waitTime time.Duration, in chan float32
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func Float32Mutate(ctx context.Context, waitTime time.Duration, mutateFn func(float32) float32, in chan float32) chan float32 {
+func Float32Mutate(ctx CancelContext, waitTime time.Duration, mutateFn func(float32) float32, in chan float32) chan float32 {
 	res := make(chan float32, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func Float32Mutate(ctx context.Context, waitTime time.Duration, mutateFn func(fl
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func Float32Filter(ctx context.Context, waitTime time.Duration, filterFn func(float32) bool, in chan float32) chan float32 {
+func Float32Filter(ctx CancelContext, waitTime time.Duration, filterFn func(float32) bool, in chan float32) chan float32 {
 	res := make(chan float32, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func Float32Filter(ctx context.Context, waitTime time.Duration, filterFn func(fl
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func Float32CollectUntil(ctx context.Context, waitTime time.Duration, condition func([]float32) bool, in chan float32) chan []float32 {
+func Float32CollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]float32) bool, in chan float32) chan []float32 {
 	res := make(chan []float32, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func Float32CollectUntil(ctx context.Context, waitTime time.Duration, condition 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float32MergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan float32) chan []float32 {
+func Float32MergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan float32) chan []float32 {
 	res := make(chan []float32, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func Float32MergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, se
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float32MergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan float32) chan []float32 {
+func Float32MergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan float32) chan []float32 {
 	res := make(chan []float32, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func Float32MergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float32CombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan float32) chan []float32 {
+func Float32CombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan float32) chan []float32 {
 	res := make(chan []float32, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func Float32CombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.D
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float32CombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan float32) chan []float32 {
+func Float32CombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan float32) chan []float32 {
 	res := make(chan []float32, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func Float32CombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float32CombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan float32) chan []float32 {
+func Float32CombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan float32) chan []float32 {
 	res := make(chan []float32, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func Float32CombineInPartialOrder(ctx context.Context, maxItemWait time.Duration
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float32CombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan float32) chan []float32 {
+func Float32CombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan float32) chan []float32 {
 	res := make(chan []float32, 0)
 
 	for _, elem := range senders {

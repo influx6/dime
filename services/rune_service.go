@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -14,7 +13,7 @@ import (
 // RunePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func RunePartialCollect(ctx context.Context, waitTime time.Duration, in chan rune) chan []rune {
+func RunePartialCollect(ctx CancelContext, waitTime time.Duration, in chan rune) chan []rune {
 	res := make(chan []rune, 0)
 
 	go func() {
@@ -52,7 +51,7 @@ func RunePartialCollect(ctx context.Context, waitTime time.Duration, in chan run
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func RuneCollect(ctx context.Context, waitTime time.Duration, in chan rune) chan []rune {
+func RuneCollect(ctx CancelContext, waitTime time.Duration, in chan rune) chan []rune {
 	res := make(chan []rune, 0)
 
 	go func() {
@@ -89,7 +88,7 @@ func RuneCollect(ctx context.Context, waitTime time.Duration, in chan rune) chan
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func RuneMutate(ctx context.Context, waitTime time.Duration, mutateFn func(rune) rune, in chan rune) chan rune {
+func RuneMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(rune) rune, in chan rune) chan rune {
 	res := make(chan rune, 0)
 
 	go func() {
@@ -122,7 +121,7 @@ func RuneMutate(ctx context.Context, waitTime time.Duration, mutateFn func(rune)
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func RuneFilter(ctx context.Context, waitTime time.Duration, filterFn func(rune) bool, in chan rune) chan rune {
+func RuneFilter(ctx CancelContext, waitTime time.Duration, filterFn func(rune) bool, in chan rune) chan rune {
 	res := make(chan rune, 0)
 
 	go func() {
@@ -161,7 +160,7 @@ func RuneFilter(ctx context.Context, waitTime time.Duration, filterFn func(rune)
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func RuneCollectUntil(ctx context.Context, waitTime time.Duration, condition func([]rune) bool, in chan rune) chan []rune {
+func RuneCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]rune) bool, in chan rune) chan []rune {
 	res := make(chan []rune, 0)
 
 	go func() {
@@ -216,7 +215,7 @@ func RuneCollectUntil(ctx context.Context, waitTime time.Duration, condition fun
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func RuneMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan rune) chan []rune {
+func RuneMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan rune) chan []rune {
 	res := make(chan []rune, 0)
 
 	for _, elem := range senders {
@@ -311,7 +310,7 @@ func RuneMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, sende
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func RuneMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan rune) chan []rune {
+func RuneMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan rune) chan []rune {
 	res := make(chan []rune, 0)
 
 	for _, elem := range senders {
@@ -407,7 +406,7 @@ func RuneMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ..
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func RuneCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan rune) chan []rune {
+func RuneCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan rune) chan []rune {
 	res := make(chan []rune, 0)
 
 	for _, elem := range senders {
@@ -509,7 +508,7 @@ func RuneCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Dura
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func RuneCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan rune) chan []rune {
+func RuneCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan rune) chan []rune {
 	res := make(chan []rune, 0)
 
 	for _, elem := range senders {
@@ -600,7 +599,7 @@ func RuneCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, sen
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func RuneCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan rune) chan []rune {
+func RuneCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan rune) chan []rune {
 	res := make(chan []rune, 0)
 
 	for _, elem := range senders {
@@ -703,7 +702,7 @@ func RuneCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, s
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func RuneCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan rune) chan []rune {
+func RuneCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan rune) chan []rune {
 	res := make(chan []rune, 0)
 
 	for _, elem := range senders {

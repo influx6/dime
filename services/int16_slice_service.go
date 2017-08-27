@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./int16_slice_service.go -toDir ./impl/int16slice
 
 // Int16SliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of []int16.
-type Int16SliceFromByteAdapterWithContext func(context.Context, chan []byte) chan []int16
+type Int16SliceFromByteAdapterWithContext func(CancelContext, chan []byte) chan []int16
 
 // Int16SliceToByteAdapter defines a function that that will take a channel of bytes and return a channel of []int16.
-type Int16SliceToByteAdapter func(context.Context, chan []int16) chan []byte
+type Int16SliceToByteAdapter func(CancelContext, chan []int16) chan []byte
 
 // Int16SlicePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func Int16SlicePartialCollect(ctx context.Context, waitTime time.Duration, in chan []int16) chan [][]int16 {
+func Int16SlicePartialCollect(ctx CancelContext, waitTime time.Duration, in chan []int16) chan [][]int16 {
 	res := make(chan [][]int16, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func Int16SlicePartialCollect(ctx context.Context, waitTime time.Duration, in ch
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func Int16SliceCollect(ctx context.Context, waitTime time.Duration, in chan []int16) chan [][]int16 {
+func Int16SliceCollect(ctx CancelContext, waitTime time.Duration, in chan []int16) chan [][]int16 {
 	res := make(chan [][]int16, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func Int16SliceCollect(ctx context.Context, waitTime time.Duration, in chan []in
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func Int16SliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func([]int16) []int16, in chan []int16) chan []int16 {
+func Int16SliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]int16) []int16, in chan []int16) chan []int16 {
 	res := make(chan []int16, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func Int16SliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func Int16SliceFilter(ctx context.Context, waitTime time.Duration, filterFn func([]int16) bool, in chan []int16) chan []int16 {
+func Int16SliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]int16) bool, in chan []int16) chan []int16 {
 	res := make(chan []int16, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func Int16SliceFilter(ctx context.Context, waitTime time.Duration, filterFn func
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func Int16SliceCollectUntil(ctx context.Context, waitTime time.Duration, condition func([][]int16) bool, in chan []int16) chan [][]int16 {
+func Int16SliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]int16) bool, in chan []int16) chan [][]int16 {
 	res := make(chan [][]int16, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func Int16SliceCollectUntil(ctx context.Context, waitTime time.Duration, conditi
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Int16SliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []int16) chan []int16 {
+func Int16SliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []int16) chan []int16 {
 	res := make(chan []int16, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func Int16SliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration,
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Int16SliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []int16) chan []int16 {
+func Int16SliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []int16) chan []int16 {
 	res := make(chan []int16, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func Int16SliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, send
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Int16SliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []int16) chan [][]int16 {
+func Int16SliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []int16) chan [][]int16 {
 	res := make(chan [][]int16, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func Int16SliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait tim
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Int16SliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []int16) chan [][]int16 {
+func Int16SliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []int16) chan [][]int16 {
 	res := make(chan [][]int16, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func Int16SliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duratio
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Int16SliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []int16) chan [][]int16 {
+func Int16SliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []int16) chan [][]int16 {
 	res := make(chan [][]int16, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func Int16SliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Durat
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Int16SliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []int16) chan [][]int16 {
+func Int16SliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []int16) chan [][]int16 {
 	res := make(chan [][]int16, 0)
 
 	for _, elem := range senders {

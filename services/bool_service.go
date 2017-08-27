@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./bool_service.go -toDir ./impl/bool
 
 // BoolFromByteAdapter defines a function that that will take a channel of bytes and return a channel of bool.
-type BoolFromByteAdapterWithContext func(context.Context, chan []byte) chan bool
+type BoolFromByteAdapterWithContext func(CancelContext, chan []byte) chan bool
 
 // BoolToByteAdapter defines a function that that will take a channel of bytes and return a channel of bool.
-type BoolToByteAdapter func(context.Context, chan bool) chan []byte
+type BoolToByteAdapter func(CancelContext, chan bool) chan []byte
 
 // BoolPartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func BoolPartialCollect(ctx context.Context, waitTime time.Duration, in chan bool) chan []bool {
+func BoolPartialCollect(ctx CancelContext, waitTime time.Duration, in chan bool) chan []bool {
 	res := make(chan []bool, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func BoolPartialCollect(ctx context.Context, waitTime time.Duration, in chan boo
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func BoolCollect(ctx context.Context, waitTime time.Duration, in chan bool) chan []bool {
+func BoolCollect(ctx CancelContext, waitTime time.Duration, in chan bool) chan []bool {
 	res := make(chan []bool, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func BoolCollect(ctx context.Context, waitTime time.Duration, in chan bool) chan
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func BoolMutate(ctx context.Context, waitTime time.Duration, mutateFn func(bool) bool, in chan bool) chan bool {
+func BoolMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(bool) bool, in chan bool) chan bool {
 	res := make(chan bool, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func BoolMutate(ctx context.Context, waitTime time.Duration, mutateFn func(bool)
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func BoolFilter(ctx context.Context, waitTime time.Duration, filterFn func(bool) bool, in chan bool) chan bool {
+func BoolFilter(ctx CancelContext, waitTime time.Duration, filterFn func(bool) bool, in chan bool) chan bool {
 	res := make(chan bool, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func BoolFilter(ctx context.Context, waitTime time.Duration, filterFn func(bool)
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func BoolCollectUntil(ctx context.Context, waitTime time.Duration, condition func([]bool) bool, in chan bool) chan []bool {
+func BoolCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]bool) bool, in chan bool) chan []bool {
 	res := make(chan []bool, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func BoolCollectUntil(ctx context.Context, waitTime time.Duration, condition fun
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BoolMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan bool) chan []bool {
+func BoolMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan bool) chan []bool {
 	res := make(chan []bool, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func BoolMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, sende
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BoolMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan bool) chan []bool {
+func BoolMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan bool) chan []bool {
 	res := make(chan []bool, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func BoolMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ..
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BoolCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan bool) chan []bool {
+func BoolCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan bool) chan []bool {
 	res := make(chan []bool, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func BoolCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Dura
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BoolCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan bool) chan []bool {
+func BoolCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan bool) chan []bool {
 	res := make(chan []bool, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func BoolCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, sen
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BoolCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan bool) chan []bool {
+func BoolCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan bool) chan []bool {
 	res := make(chan []bool, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func BoolCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, s
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BoolCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan bool) chan []bool {
+func BoolCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan bool) chan []bool {
 	res := make(chan []bool, 0)
 
 	for _, elem := range senders {

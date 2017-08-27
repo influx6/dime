@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -14,7 +13,7 @@ import (
 // BytesPartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func BytesPartialCollect(ctx context.Context, waitTime time.Duration, in chan []byte) chan [][]byte {
+func BytesPartialCollect(ctx CancelContext, waitTime time.Duration, in chan []byte) chan [][]byte {
 	res := make(chan [][]byte, 0)
 
 	go func() {
@@ -52,7 +51,7 @@ func BytesPartialCollect(ctx context.Context, waitTime time.Duration, in chan []
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func BytesCollect(ctx context.Context, waitTime time.Duration, in chan []byte) chan [][]byte {
+func BytesCollect(ctx CancelContext, waitTime time.Duration, in chan []byte) chan [][]byte {
 	res := make(chan [][]byte, 0)
 
 	go func() {
@@ -89,7 +88,7 @@ func BytesCollect(ctx context.Context, waitTime time.Duration, in chan []byte) c
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func BytesMutate(ctx context.Context, waitTime time.Duration, mutateFn func([]byte) []byte, in chan []byte) chan []byte {
+func BytesMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]byte) []byte, in chan []byte) chan []byte {
 	res := make(chan []byte, 0)
 
 	go func() {
@@ -122,7 +121,7 @@ func BytesMutate(ctx context.Context, waitTime time.Duration, mutateFn func([]by
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func BytesFilter(ctx context.Context, waitTime time.Duration, filterFn func([]byte) bool, in chan []byte) chan []byte {
+func BytesFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]byte) bool, in chan []byte) chan []byte {
 	res := make(chan []byte, 0)
 
 	go func() {
@@ -161,7 +160,7 @@ func BytesFilter(ctx context.Context, waitTime time.Duration, filterFn func([]by
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func BytesCollectUntil(ctx context.Context, waitTime time.Duration, condition func([][]byte) bool, in chan []byte) chan [][]byte {
+func BytesCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]byte) bool, in chan []byte) chan [][]byte {
 	res := make(chan [][]byte, 0)
 
 	go func() {
@@ -216,7 +215,7 @@ func BytesCollectUntil(ctx context.Context, waitTime time.Duration, condition fu
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BytesMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []byte) chan []byte {
+func BytesMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []byte) chan []byte {
 	res := make(chan []byte, 0)
 
 	for _, elem := range senders {
@@ -311,7 +310,7 @@ func BytesMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, send
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BytesMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []byte) chan []byte {
+func BytesMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []byte) chan []byte {
 	res := make(chan []byte, 0)
 
 	for _, elem := range senders {
@@ -407,7 +406,7 @@ func BytesMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders .
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BytesCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []byte) chan [][]byte {
+func BytesCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []byte) chan [][]byte {
 	res := make(chan [][]byte, 0)
 
 	for _, elem := range senders {
@@ -509,7 +508,7 @@ func BytesCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Dur
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BytesCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []byte) chan [][]byte {
+func BytesCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []byte) chan [][]byte {
 	res := make(chan [][]byte, 0)
 
 	for _, elem := range senders {
@@ -600,7 +599,7 @@ func BytesCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, se
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BytesCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []byte) chan [][]byte {
+func BytesCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []byte) chan [][]byte {
 	res := make(chan [][]byte, 0)
 
 	for _, elem := range senders {
@@ -703,7 +702,7 @@ func BytesCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BytesCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []byte) chan [][]byte {
+func BytesCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []byte) chan [][]byte {
 	res := make(chan [][]byte, 0)
 
 	for _, elem := range senders {

@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./int_service.go -toDir ./impl/int
 
 // IntFromByteAdapter defines a function that that will take a channel of bytes and return a channel of int.
-type IntFromByteAdapterWithContext func(context.Context, chan []byte) chan int
+type IntFromByteAdapterWithContext func(CancelContext, chan []byte) chan int
 
 // IntToByteAdapter defines a function that that will take a channel of bytes and return a channel of int.
-type IntToByteAdapter func(context.Context, chan int) chan []byte
+type IntToByteAdapter func(CancelContext, chan int) chan []byte
 
 // IntPartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func IntPartialCollect(ctx context.Context, waitTime time.Duration, in chan int) chan []int {
+func IntPartialCollect(ctx CancelContext, waitTime time.Duration, in chan int) chan []int {
 	res := make(chan []int, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func IntPartialCollect(ctx context.Context, waitTime time.Duration, in chan int)
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func IntCollect(ctx context.Context, waitTime time.Duration, in chan int) chan []int {
+func IntCollect(ctx CancelContext, waitTime time.Duration, in chan int) chan []int {
 	res := make(chan []int, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func IntCollect(ctx context.Context, waitTime time.Duration, in chan int) chan [
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func IntMutate(ctx context.Context, waitTime time.Duration, mutateFn func(int) int, in chan int) chan int {
+func IntMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(int) int, in chan int) chan int {
 	res := make(chan int, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func IntMutate(ctx context.Context, waitTime time.Duration, mutateFn func(int) i
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func IntFilter(ctx context.Context, waitTime time.Duration, filterFn func(int) bool, in chan int) chan int {
+func IntFilter(ctx CancelContext, waitTime time.Duration, filterFn func(int) bool, in chan int) chan int {
 	res := make(chan int, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func IntFilter(ctx context.Context, waitTime time.Duration, filterFn func(int) b
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func IntCollectUntil(ctx context.Context, waitTime time.Duration, condition func([]int) bool, in chan int) chan []int {
+func IntCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]int) bool, in chan int) chan []int {
 	res := make(chan []int, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func IntCollectUntil(ctx context.Context, waitTime time.Duration, condition func
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan int) chan []int {
+func IntMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan int) chan []int {
 	res := make(chan []int, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func IntMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, sender
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan int) chan []int {
+func IntMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan int) chan []int {
 	res := make(chan []int, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func IntMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan int) chan []int {
+func IntCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan int) chan []int {
 	res := make(chan []int, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func IntCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Durat
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan int) chan []int {
+func IntCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan int) chan []int {
 	res := make(chan []int, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func IntCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, send
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan int) chan []int {
+func IntCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan int) chan []int {
 	res := make(chan []int, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func IntCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, se
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan int) chan []int {
+func IntCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan int) chan []int {
 	res := make(chan []int, 0)
 
 	for _, elem := range senders {

@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./string_slice_service.go -toDir ./impl/stringslice
 
 // StringSliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of []string.
-type StringSliceFromByteAdapterWithContext func(context.Context, chan []byte) chan []string
+type StringSliceFromByteAdapterWithContext func(CancelContext, chan []byte) chan []string
 
 // StringSliceToByteAdapter defines a function that that will take a channel of bytes and return a channel of []string.
-type StringSliceToByteAdapter func(context.Context, chan []string) chan []byte
+type StringSliceToByteAdapter func(CancelContext, chan []string) chan []byte
 
 // StringSlicePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func StringSlicePartialCollect(ctx context.Context, waitTime time.Duration, in chan []string) chan [][]string {
+func StringSlicePartialCollect(ctx CancelContext, waitTime time.Duration, in chan []string) chan [][]string {
 	res := make(chan [][]string, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func StringSlicePartialCollect(ctx context.Context, waitTime time.Duration, in c
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func StringSliceCollect(ctx context.Context, waitTime time.Duration, in chan []string) chan [][]string {
+func StringSliceCollect(ctx CancelContext, waitTime time.Duration, in chan []string) chan [][]string {
 	res := make(chan [][]string, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func StringSliceCollect(ctx context.Context, waitTime time.Duration, in chan []s
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func StringSliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func([]string) []string, in chan []string) chan []string {
+func StringSliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]string) []string, in chan []string) chan []string {
 	res := make(chan []string, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func StringSliceMutate(ctx context.Context, waitTime time.Duration, mutateFn fun
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func StringSliceFilter(ctx context.Context, waitTime time.Duration, filterFn func([]string) bool, in chan []string) chan []string {
+func StringSliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]string) bool, in chan []string) chan []string {
 	res := make(chan []string, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func StringSliceFilter(ctx context.Context, waitTime time.Duration, filterFn fun
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func StringSliceCollectUntil(ctx context.Context, waitTime time.Duration, condition func([][]string) bool, in chan []string) chan [][]string {
+func StringSliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]string) bool, in chan []string) chan [][]string {
 	res := make(chan [][]string, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func StringSliceCollectUntil(ctx context.Context, waitTime time.Duration, condit
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringSliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []string) chan []string {
+func StringSliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []string) chan []string {
 	res := make(chan []string, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func StringSliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringSliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []string) chan []string {
+func StringSliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []string) chan []string {
 	res := make(chan []string, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func StringSliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, sen
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringSliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []string) chan [][]string {
+func StringSliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []string) chan [][]string {
 	res := make(chan [][]string, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func StringSliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait ti
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringSliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []string) chan [][]string {
+func StringSliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []string) chan [][]string {
 	res := make(chan [][]string, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func StringSliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Durati
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringSliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []string) chan [][]string {
+func StringSliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []string) chan [][]string {
 	res := make(chan [][]string, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func StringSliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Dura
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringSliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []string) chan [][]string {
+func StringSliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []string) chan [][]string {
 	res := make(chan [][]string, 0)
 
 	for _, elem := range senders {

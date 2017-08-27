@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./float64_slice_service.go -toDir ./impl/float64slice
 
 // Float64SliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of []float64.
-type Float64SliceFromByteAdapterWithContext func(context.Context, chan []byte) chan []float64
+type Float64SliceFromByteAdapterWithContext func(CancelContext, chan []byte) chan []float64
 
 // Float64SliceToByteAdapter defines a function that that will take a channel of bytes and return a channel of []float64.
-type Float64SliceToByteAdapter func(context.Context, chan []float64) chan []byte
+type Float64SliceToByteAdapter func(CancelContext, chan []float64) chan []byte
 
 // Float64SlicePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func Float64SlicePartialCollect(ctx context.Context, waitTime time.Duration, in chan []float64) chan [][]float64 {
+func Float64SlicePartialCollect(ctx CancelContext, waitTime time.Duration, in chan []float64) chan [][]float64 {
 	res := make(chan [][]float64, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func Float64SlicePartialCollect(ctx context.Context, waitTime time.Duration, in 
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func Float64SliceCollect(ctx context.Context, waitTime time.Duration, in chan []float64) chan [][]float64 {
+func Float64SliceCollect(ctx CancelContext, waitTime time.Duration, in chan []float64) chan [][]float64 {
 	res := make(chan [][]float64, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func Float64SliceCollect(ctx context.Context, waitTime time.Duration, in chan []
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func Float64SliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func([]float64) []float64, in chan []float64) chan []float64 {
+func Float64SliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]float64) []float64, in chan []float64) chan []float64 {
 	res := make(chan []float64, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func Float64SliceMutate(ctx context.Context, waitTime time.Duration, mutateFn fu
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func Float64SliceFilter(ctx context.Context, waitTime time.Duration, filterFn func([]float64) bool, in chan []float64) chan []float64 {
+func Float64SliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]float64) bool, in chan []float64) chan []float64 {
 	res := make(chan []float64, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func Float64SliceFilter(ctx context.Context, waitTime time.Duration, filterFn fu
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func Float64SliceCollectUntil(ctx context.Context, waitTime time.Duration, condition func([][]float64) bool, in chan []float64) chan [][]float64 {
+func Float64SliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]float64) bool, in chan []float64) chan [][]float64 {
 	res := make(chan [][]float64, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func Float64SliceCollectUntil(ctx context.Context, waitTime time.Duration, condi
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64SliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []float64) chan []float64 {
+func Float64SliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []float64) chan []float64 {
 	res := make(chan []float64, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func Float64SliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duratio
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64SliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []float64) chan []float64 {
+func Float64SliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []float64) chan []float64 {
 	res := make(chan []float64, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func Float64SliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, se
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64SliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []float64) chan [][]float64 {
+func Float64SliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []float64) chan [][]float64 {
 	res := make(chan [][]float64, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func Float64SliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait t
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64SliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []float64) chan [][]float64 {
+func Float64SliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []float64) chan [][]float64 {
 	res := make(chan [][]float64, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func Float64SliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Durat
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64SliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []float64) chan [][]float64 {
+func Float64SliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []float64) chan [][]float64 {
 	res := make(chan [][]float64, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func Float64SliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Dur
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64SliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []float64) chan [][]float64 {
+func Float64SliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []float64) chan [][]float64 {
 	res := make(chan [][]float64, 0)
 
 	for _, elem := range senders {

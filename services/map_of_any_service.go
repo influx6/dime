@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./map_of_any_service.go -toDir ./impl/mapofany
 
 // MapOfAnyFromByteAdapter defines a function that that will take a channel of bytes and return a channel of map[interface{}]interface{}.
-type MapOfAnyFromByteAdapterWithContext func(context.Context, chan []byte) chan map[interface{}]interface{}
+type MapOfAnyFromByteAdapterWithContext func(CancelContext, chan []byte) chan map[interface{}]interface{}
 
 // MapOfAnyToByteAdapter defines a function that that will take a channel of bytes and return a channel of map[interface{}]interface{}.
-type MapOfAnyToByteAdapter func(context.Context, chan map[interface{}]interface{}) chan []byte
+type MapOfAnyToByteAdapter func(CancelContext, chan map[interface{}]interface{}) chan []byte
 
 // MapOfAnyPartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func MapOfAnyPartialCollect(ctx context.Context, waitTime time.Duration, in chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
+func MapOfAnyPartialCollect(ctx CancelContext, waitTime time.Duration, in chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
 	res := make(chan []map[interface{}]interface{}, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func MapOfAnyPartialCollect(ctx context.Context, waitTime time.Duration, in chan
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func MapOfAnyCollect(ctx context.Context, waitTime time.Duration, in chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
+func MapOfAnyCollect(ctx CancelContext, waitTime time.Duration, in chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
 	res := make(chan []map[interface{}]interface{}, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func MapOfAnyCollect(ctx context.Context, waitTime time.Duration, in chan map[in
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func MapOfAnyMutate(ctx context.Context, waitTime time.Duration, mutateFn func(map[interface{}]interface{}) map[interface{}]interface{}, in chan map[interface{}]interface{}) chan map[interface{}]interface{} {
+func MapOfAnyMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(map[interface{}]interface{}) map[interface{}]interface{}, in chan map[interface{}]interface{}) chan map[interface{}]interface{} {
 	res := make(chan map[interface{}]interface{}, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func MapOfAnyMutate(ctx context.Context, waitTime time.Duration, mutateFn func(m
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func MapOfAnyFilter(ctx context.Context, waitTime time.Duration, filterFn func(map[interface{}]interface{}) bool, in chan map[interface{}]interface{}) chan map[interface{}]interface{} {
+func MapOfAnyFilter(ctx CancelContext, waitTime time.Duration, filterFn func(map[interface{}]interface{}) bool, in chan map[interface{}]interface{}) chan map[interface{}]interface{} {
 	res := make(chan map[interface{}]interface{}, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func MapOfAnyFilter(ctx context.Context, waitTime time.Duration, filterFn func(m
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func MapOfAnyCollectUntil(ctx context.Context, waitTime time.Duration, condition func([]map[interface{}]interface{}) bool, in chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
+func MapOfAnyCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]map[interface{}]interface{}) bool, in chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
 	res := make(chan []map[interface{}]interface{}, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func MapOfAnyCollectUntil(ctx context.Context, waitTime time.Duration, condition
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapOfAnyMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
+func MapOfAnyMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
 	res := make(chan []map[interface{}]interface{}, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func MapOfAnyMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, s
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapOfAnyMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
+func MapOfAnyMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
 	res := make(chan []map[interface{}]interface{}, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func MapOfAnyMergeInOrder(ctx context.Context, maxWaitTime time.Duration, sender
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapOfAnyCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
+func MapOfAnyCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
 	res := make(chan []map[interface{}]interface{}, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func MapOfAnyCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapOfAnyCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
+func MapOfAnyCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
 	res := make(chan []map[interface{}]interface{}, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func MapOfAnyCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration,
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapOfAnyCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
+func MapOfAnyCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
 	res := make(chan []map[interface{}]interface{}, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func MapOfAnyCombineInPartialOrder(ctx context.Context, maxItemWait time.Duratio
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapOfAnyCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
+func MapOfAnyCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan map[interface{}]interface{}) chan []map[interface{}]interface{} {
 	res := make(chan []map[interface{}]interface{}, 0)
 
 	for _, elem := range senders {

@@ -4,7 +4,6 @@
 package services
 
 import (
-	"context"
 	"sync/atomic"
 	"time"
 )
@@ -12,15 +11,15 @@ import (
 //go:generate moz generate-file -fromFile ./bool_slice_service.go -toDir ./impl/boolslice
 
 // BoolSliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of []bool.
-type BoolSliceFromByteAdapterWithContext func(context.Context, chan []byte) chan []bool
+type BoolSliceFromByteAdapterWithContext func(CancelContext, chan []byte) chan []bool
 
 // BoolSliceToByteAdapter defines a function that that will take a channel of bytes and return a channel of []bool.
-type BoolSliceToByteAdapter func(context.Context, chan []bool) chan []byte
+type BoolSliceToByteAdapter func(CancelContext, chan []bool) chan []byte
 
 // BoolSlicePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func BoolSlicePartialCollect(ctx context.Context, waitTime time.Duration, in chan []bool) chan [][]bool {
+func BoolSlicePartialCollect(ctx CancelContext, waitTime time.Duration, in chan []bool) chan [][]bool {
 	res := make(chan [][]bool, 0)
 
 	go func() {
@@ -58,7 +57,7 @@ func BoolSlicePartialCollect(ctx context.Context, waitTime time.Duration, in cha
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func BoolSliceCollect(ctx context.Context, waitTime time.Duration, in chan []bool) chan [][]bool {
+func BoolSliceCollect(ctx CancelContext, waitTime time.Duration, in chan []bool) chan [][]bool {
 	res := make(chan [][]bool, 0)
 
 	go func() {
@@ -95,7 +94,7 @@ func BoolSliceCollect(ctx context.Context, waitTime time.Duration, in chan []boo
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func BoolSliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func([]bool) []bool, in chan []bool) chan []bool {
+func BoolSliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]bool) []bool, in chan []bool) chan []bool {
 	res := make(chan []bool, 0)
 
 	go func() {
@@ -128,7 +127,7 @@ func BoolSliceMutate(ctx context.Context, waitTime time.Duration, mutateFn func(
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func BoolSliceFilter(ctx context.Context, waitTime time.Duration, filterFn func([]bool) bool, in chan []bool) chan []bool {
+func BoolSliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]bool) bool, in chan []bool) chan []bool {
 	res := make(chan []bool, 0)
 
 	go func() {
@@ -167,7 +166,7 @@ func BoolSliceFilter(ctx context.Context, waitTime time.Duration, filterFn func(
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func BoolSliceCollectUntil(ctx context.Context, waitTime time.Duration, condition func([][]bool) bool, in chan []bool) chan [][]bool {
+func BoolSliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]bool) bool, in chan []bool) chan [][]bool {
 	res := make(chan [][]bool, 0)
 
 	go func() {
@@ -222,7 +221,7 @@ func BoolSliceCollectUntil(ctx context.Context, waitTime time.Duration, conditio
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BoolSliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []bool) chan []bool {
+func BoolSliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []bool) chan []bool {
 	res := make(chan []bool, 0)
 
 	for _, elem := range senders {
@@ -317,7 +316,7 @@ func BoolSliceMergeWithoutOrder(ctx context.Context, maxWaitTime time.Duration, 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BoolSliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, senders ...chan []bool) chan []bool {
+func BoolSliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []bool) chan []bool {
 	res := make(chan []bool, 0)
 
 	for _, elem := range senders {
@@ -413,7 +412,7 @@ func BoolSliceMergeInOrder(ctx context.Context, maxWaitTime time.Duration, sende
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BoolSliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []bool) chan [][]bool {
+func BoolSliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []bool) chan [][]bool {
 	res := make(chan [][]bool, 0)
 
 	for _, elem := range senders {
@@ -515,7 +514,7 @@ func BoolSliceCombinePartiallyWithoutOrder(ctx context.Context, maxItemWait time
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BoolSliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []bool) chan [][]bool {
+func BoolSliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []bool) chan [][]bool {
 	res := make(chan [][]bool, 0)
 
 	for _, elem := range senders {
@@ -606,7 +605,7 @@ func BoolSliceCombineWithoutOrder(ctx context.Context, maxItemWait time.Duration
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BoolSliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []bool) chan [][]bool {
+func BoolSliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []bool) chan [][]bool {
 	res := make(chan [][]bool, 0)
 
 	for _, elem := range senders {
@@ -709,7 +708,7 @@ func BoolSliceCombineInPartialOrder(ctx context.Context, maxItemWait time.Durati
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func BoolSliceCombineInOrder(ctx context.Context, maxItemWait time.Duration, senders ...chan []bool) chan [][]bool {
+func BoolSliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []bool) chan [][]bool {
 	res := make(chan [][]bool, 0)
 
 	for _, elem := range senders {

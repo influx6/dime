@@ -5,20 +5,14 @@
 //
 /*
 
-  @templater(id => Vars, gen => Partial.Go, {
-  		var (
-  			// defaultSendWithBeforeAbort defines the time to await receving a message else aborting.
-  			defaultSendWithBeforeAbort = 3 * time.Second
-  		)
-  })
-
+  @templater(id => Common, gen => Partial.Go, file => common.tml)
   @templater(id => Service, gen => Partial.Go, file => types.tml)
   @templater(id => ServiceTest, gen => Partial_Test.Go, file => types-test.tml)
   @templater(id => ServiceSliceTest, gen => Partial_Test.Go, file => types-slice-test.tml)
 
-  @templaterTypesFor(id => Vars, filename => vars.go)
-
 Below are types annotations used to generate different Service types based on a giving type.
+
+  @templaterTypesFor(id => Common, filename => common.go)
 
   @templaterTypesFor(id => Service, filename => map_service.go, Name => Map, Type => map[string]string)
   @templaterTypesFor(id => ServiceTest, filename => map_service_test.go, Name => Map, Type => map[string]string)
