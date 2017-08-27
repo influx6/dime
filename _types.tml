@@ -8,10 +8,12 @@ import (
 {{ $noadapter := sel "NoAdapter" }}
 {{ if eq $noadapter "" }}
 // {{ sel "Name" }}FromByteAdapter defines a function that that will take a channel of bytes and return a channel of {{ sel "Type"}}.
-	type {{ sel "Name" }}FromByteAdapterWithContext func(CancelContext, chan []byte) chan {{sel "Type"}}
+type {{ sel "Name" }}FromByteAdapter func(CancelContext, chan []byte) chan {{sel "Type"}}
 
 // {{ sel "Name" }}ToByteAdapter defines a function that that will take a channel of bytes and return a channel of {{ sel "Type"}}.
-	type {{ sel "Name" }}ToByteAdapter func(CancelContext, chan {{sel "Type"}}) chan []byte
+type {{ sel "Name" }}ToByteAdapter func(CancelContext, chan {{sel "Type"}}) chan []byte
+
+func 
 
 {{ end}}
 

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/influx6/dime/impl"
+	"github.com/influx6/dime/json"
 
 	"github.com/influx6/dime/services"
 )
@@ -76,7 +77,7 @@ func (bx *ByteRWFunction) run() {
 		panic(err)
 	}
 
-	if err := bx.stderr.Write(outErr); err != nil {
+	if err := bx.stderr.Write(json.ErrorBecomeBytesWithJSON(bx, outErr)); err != nil {
 		panic(err)
 	}
 

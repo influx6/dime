@@ -5,10 +5,10 @@
 //
 /*
 
-  @templater(id => Common, gen => Partial.Go, file => common.tml)
-  @templater(id => Service, gen => Partial.Go, file => types.tml)
-  @templater(id => ServiceTest, gen => Partial_Test.Go, file => types-test.tml)
-  @templater(id => ServiceSliceTest, gen => Partial_Test.Go, file => types-slice-test.tml)
+  @templater(id => Common, gen => Partial.Go, file => _common.tml)
+  @templater(id => Service, gen => Partial.Go, file => _types.tml)
+  @templater(id => ServiceTest, gen => Partial_Test.Go, file => _types-test.tml)
+  @templater(id => ServiceSliceTest, gen => Partial_Test.Go, file => _types-slice-test.tml)
 
 Below are types annotations used to generate different Service types based on a giving type.
 
