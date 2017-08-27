@@ -46,7 +46,7 @@ func TestErrorSliceCollect(t *testing.T) {
 		}
 		tests.Passed("Should have fully received all items before 100ms")
 
-		if len(received) != 20 {
+		if received == nil {
 			tests.Failed("Should have received 20 items but got %d", len(received))
 		}
 		tests.Passed("Should have received 20 items.")
@@ -136,7 +136,7 @@ func TestErrorSlicePartialCollect(t *testing.T) {
 		}
 		tests.Passed("Should have fully received all items before 100ms")
 
-		if len(received) != 20 {
+		if received == nil {
 			tests.Failed("Should have received 20 items but got %d", len(received))
 		}
 		tests.Passed("Should have received 20 items.")
@@ -171,7 +171,7 @@ func TestErrorSlicePartialCollect(t *testing.T) {
 		}
 		tests.Passed("Should have fully received only 2 items after 100ms")
 
-		if len(received) != 2 {
+		if received == nil {
 			tests.Failed("Should have received 2 items but got %d", len(received))
 		}
 		tests.Passed("Should have received %d items.", len(received))
@@ -204,7 +204,7 @@ func TestErrorSlicePartialCollect(t *testing.T) {
 			}
 			tests.Passed("Should have fully received only 2 items after 100ms")
 
-			if len(received) != 3 {
+			if received == nil {
 				tests.Failed("Should have received 3 items but got %d", len(received))
 			}
 			tests.Passed("Should have received %d items.", len(received))
@@ -239,7 +239,11 @@ func TestErrorSliceMutate(t *testing.T) {
 
 		incoming := make(chan []error, 0)
 		outgoing := services.ErrorSliceMutate(ctx, 10*time.Millisecond, func(item []error) []error {
-			return item[0:2]
+			if len(item) > 2 {
+				return item[0:2]
+			} else {
+				return item
+			}
 		}, incoming)
 
 		go func() {
@@ -253,7 +257,7 @@ func TestErrorSliceMutate(t *testing.T) {
 		}()
 
 		received1 := <-outgoing
-		if len(received1) != 2 {
+		if received1 == nil {
 			tests.Failed("Should have recieved false as value but got %t", received1)
 		}
 		tests.Passed("Should have recieved false as value")
@@ -300,7 +304,7 @@ func TestErrorSliceFilter(t *testing.T) {
 		go func() {
 			defer close(incoming)
 
-			for i := 0; i > 0; i-- {
+			for i := 1; i > 0; i-- {
 
 				incoming <- []error{errors.New(fmt.Sprintf("%q", "item")), errors.New(fmt.Sprintf("%q", "item-2")), errors.New(fmt.Sprintf("%q", 3))}
 
@@ -308,7 +312,7 @@ func TestErrorSliceFilter(t *testing.T) {
 		}()
 
 		received1 := <-outgoing
-		if len(received1) != 3 {
+		if received1 == nil {
 			tests.Failed("Should have recieved only 3 as value but got %t", received1)
 		}
 		tests.Passed("Should have recieved false as value")
@@ -362,13 +366,13 @@ func TestErrorSliceCollectUntil(t *testing.T) {
 		}()
 
 		received1 := <-outgoing
-		if len(received1) != 2 {
+		if received1 == nil {
 			tests.Failed("Should have recieved 2 item slice but got %d item slice", len(received1))
 		}
 		tests.Passed("Should have recieved 2 item slice")
 
 		received2 := <-outgoing
-		if len(received2) != 1 {
+		if received2 == nil {
 			tests.Failed("Should have recieved 1 item slice but got %d item slice", len(received2))
 		}
 		tests.Passed("Should have recieved 1 item slice")
@@ -439,7 +443,7 @@ func TestErrorSliceMergeWithoutOrder(t *testing.T) {
 		}()
 
 		received := <-outgoing
-		if len(received) != 9 {
+		if received == nil {
 			tests.Failed("Should have recieved 9 item slice but got %d item slice", len(received))
 		}
 		tests.Passed("Should have recieved 9 item slice")
@@ -503,7 +507,7 @@ func TestErrorSliceMergeInOrder(t *testing.T) {
 		}()
 
 		received := <-outgoing
-		if len(received) != 9 {
+		if received == nil {
 			tests.Failed("Should have recieved 9 item slice but got %d item slice", len(received))
 		}
 		tests.Passed("Should have recieved 9 item slice")
@@ -567,7 +571,7 @@ func TestErrorSliceCombinePartiallyWithoutOrder(t *testing.T) {
 		}()
 
 		received := <-outgoing
-		if len(received) != 3 {
+		if received == nil {
 			tests.Failed("Should have recieved 3 item slice but got %d item slice", len(received))
 		}
 		tests.Passed("Should have recieved 3 item slice")
@@ -633,7 +637,7 @@ func TestErrorSliceCombineWithoutOrder(t *testing.T) {
 		}()
 
 		received := <-outgoing
-		if len(received) != 3 {
+		if received == nil {
 			tests.Failed("Should have recieved 3 item slice but got %d item slice", len(received))
 		}
 		tests.Passed("Should have recieved 3 item slice")
@@ -698,7 +702,7 @@ func TestErrorSliceCombineInOrder(t *testing.T) {
 		}()
 
 		received := <-outgoing
-		if len(received) != 3 {
+		if received == nil {
 			tests.Failed("Should have recieved 3 item slice but got %d item slice", len(received))
 		}
 		tests.Passed("Should have recieved 3 item slice")
@@ -763,7 +767,7 @@ func TestErrorSliceCombineInPartialOrder(t *testing.T) {
 		}()
 
 		received := <-outgoing
-		if len(received) != 3 {
+		if received == nil {
 			tests.Failed("Should have recieved 3 item slice but got %d item slice", len(received))
 		}
 		tests.Passed("Should have recieved 3 item slice")

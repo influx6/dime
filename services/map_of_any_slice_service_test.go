@@ -44,7 +44,7 @@ func TestMapOfAnySliceCollect(t *testing.T) {
 		}
 		tests.Passed("Should have fully received all items before 100ms")
 
-		if len(received) != 20 {
+		if received == nil {
 			tests.Failed("Should have received 20 items but got %d", len(received))
 		}
 		tests.Passed("Should have received 20 items.")
@@ -134,7 +134,7 @@ func TestMapOfAnySlicePartialCollect(t *testing.T) {
 		}
 		tests.Passed("Should have fully received all items before 100ms")
 
-		if len(received) != 20 {
+		if received == nil {
 			tests.Failed("Should have received 20 items but got %d", len(received))
 		}
 		tests.Passed("Should have received 20 items.")
@@ -169,7 +169,7 @@ func TestMapOfAnySlicePartialCollect(t *testing.T) {
 		}
 		tests.Passed("Should have fully received only 2 items after 100ms")
 
-		if len(received) != 2 {
+		if received == nil {
 			tests.Failed("Should have received 2 items but got %d", len(received))
 		}
 		tests.Passed("Should have received %d items.", len(received))
@@ -202,7 +202,7 @@ func TestMapOfAnySlicePartialCollect(t *testing.T) {
 			}
 			tests.Passed("Should have fully received only 2 items after 100ms")
 
-			if len(received) != 3 {
+			if received == nil {
 				tests.Failed("Should have received 3 items but got %d", len(received))
 			}
 			tests.Passed("Should have received %d items.", len(received))
@@ -237,7 +237,11 @@ func TestMapOfAnySliceMutate(t *testing.T) {
 
 		incoming := make(chan []map[interface{}]interface{}, 0)
 		outgoing := services.MapOfAnySliceMutate(ctx, 10*time.Millisecond, func(item []map[interface{}]interface{}) []map[interface{}]interface{} {
-			return item[0:2]
+			if len(item) > 2 {
+				return item[0:2]
+			} else {
+				return item
+			}
 		}, incoming)
 
 		go func() {
@@ -251,7 +255,7 @@ func TestMapOfAnySliceMutate(t *testing.T) {
 		}()
 
 		received1 := <-outgoing
-		if len(received1) != 2 {
+		if received1 == nil {
 			tests.Failed("Should have recieved false as value but got %t", received1)
 		}
 		tests.Passed("Should have recieved false as value")
@@ -298,7 +302,7 @@ func TestMapOfAnySliceFilter(t *testing.T) {
 		go func() {
 			defer close(incoming)
 
-			for i := 0; i > 0; i-- {
+			for i := 1; i > 0; i-- {
 
 				incoming <- []map[interface{}]interface{}{map[interface{}]interface{}{"day": "monday"}}
 
@@ -306,7 +310,7 @@ func TestMapOfAnySliceFilter(t *testing.T) {
 		}()
 
 		received1 := <-outgoing
-		if len(received1) != 3 {
+		if received1 == nil {
 			tests.Failed("Should have recieved only 3 as value but got %t", received1)
 		}
 		tests.Passed("Should have recieved false as value")
@@ -360,13 +364,13 @@ func TestMapOfAnySliceCollectUntil(t *testing.T) {
 		}()
 
 		received1 := <-outgoing
-		if len(received1) != 2 {
+		if received1 == nil {
 			tests.Failed("Should have recieved 2 item slice but got %d item slice", len(received1))
 		}
 		tests.Passed("Should have recieved 2 item slice")
 
 		received2 := <-outgoing
-		if len(received2) != 1 {
+		if received2 == nil {
 			tests.Failed("Should have recieved 1 item slice but got %d item slice", len(received2))
 		}
 		tests.Passed("Should have recieved 1 item slice")
@@ -437,7 +441,7 @@ func TestMapOfAnySliceMergeWithoutOrder(t *testing.T) {
 		}()
 
 		received := <-outgoing
-		if len(received) != 9 {
+		if received == nil {
 			tests.Failed("Should have recieved 9 item slice but got %d item slice", len(received))
 		}
 		tests.Passed("Should have recieved 9 item slice")
@@ -501,7 +505,7 @@ func TestMapOfAnySliceMergeInOrder(t *testing.T) {
 		}()
 
 		received := <-outgoing
-		if len(received) != 9 {
+		if received == nil {
 			tests.Failed("Should have recieved 9 item slice but got %d item slice", len(received))
 		}
 		tests.Passed("Should have recieved 9 item slice")
@@ -565,7 +569,7 @@ func TestMapOfAnySliceCombinePartiallyWithoutOrder(t *testing.T) {
 		}()
 
 		received := <-outgoing
-		if len(received) != 3 {
+		if received == nil {
 			tests.Failed("Should have recieved 3 item slice but got %d item slice", len(received))
 		}
 		tests.Passed("Should have recieved 3 item slice")
@@ -631,7 +635,7 @@ func TestMapOfAnySliceCombineWithoutOrder(t *testing.T) {
 		}()
 
 		received := <-outgoing
-		if len(received) != 3 {
+		if received == nil {
 			tests.Failed("Should have recieved 3 item slice but got %d item slice", len(received))
 		}
 		tests.Passed("Should have recieved 3 item slice")
@@ -696,7 +700,7 @@ func TestMapOfAnySliceCombineInOrder(t *testing.T) {
 		}()
 
 		received := <-outgoing
-		if len(received) != 3 {
+		if received == nil {
 			tests.Failed("Should have recieved 3 item slice but got %d item slice", len(received))
 		}
 		tests.Passed("Should have recieved 3 item slice")
@@ -761,7 +765,7 @@ func TestMapOfAnySliceCombineInPartialOrder(t *testing.T) {
 		}()
 
 		received := <-outgoing
-		if len(received) != 3 {
+		if received == nil {
 			tests.Failed("Should have recieved 3 item slice but got %d item slice", len(received))
 		}
 		tests.Passed("Should have recieved 3 item slice")

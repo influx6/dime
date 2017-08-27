@@ -141,13 +141,13 @@ func {{sel "Name"}}Filter(ctx context.Context, waitTime time.Duration, filterFn 
 				return
 			case data, ok := <-in:
 				if !ok {
-          close(res)
+					close(res)
 					return
 				}
 
-        if !filterFn(data){
-          continue
-        }
+				if !filterFn(data){
+					continue
+				}
 
 				res <- data
 			case <-t.C:
