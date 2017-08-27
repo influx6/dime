@@ -85,7 +85,7 @@ func (std *ReadStdoutService) Read() (<-chan []byte, error) {
 
 // runReader reads continously from the reader provider till io.EOF.
 func (std *ReadStdoutService) runReader() {
-	reader := bufio.NewReader(os.Stdin)
+	reader := bufio.NewReader(os.Stdout)
 
 	t := time.NewTimer(readerCloseCheckDuration)
 	defer t.Stop()
