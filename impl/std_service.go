@@ -139,16 +139,26 @@ func (std *StdService) runReader() {
 				return
 			case <-t.C:
 				t.Reset(readerCloseCheckDuration)
-				break
+				// break
 			}
 
-			data, isPrefix, err := reader.ReadLine()
-
 			// Have we reached the end of a reader?
+			data, isPrefix, err := reader.ReadLine()
 			if err != nil {
 				std.pubErrs.PublishDeadline(err, errorWriteAcceptTimeout)
 
 				if err == io.EOF {
+					if len(data) != 0 && buf.Len() != 0 {
+						buf.Write(data)
+						std.pub.Publish(buf.Bytes())
+						buf.Reset()
+						return
+					}
+
+					if len(data) != 0 {
+						std.pub.Publish(data)
+					}
+
 					return
 				}
 

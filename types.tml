@@ -793,7 +793,7 @@ func {{sel "Name"}}CombineInOrder(ctx CancelContext, maxItemWait time.Duration, 
 type {{ sel "Name" }}Distributor struct {
 	running             int64
 	messages            chan {{ sel "Type" }}
-	close               chan struct{}
+	closer               chan struct{}
 	clear               chan struct{}
 	subscribers         []chan {{ sel "Type" }}
 	newSub              chan chan {{ sel "Type" }}
@@ -808,7 +808,7 @@ func New{{sel "Name"}}Disributor(buffer int, sendWaitBeforeAbort time.Duration) 
 
 	return &{{ sel "Name" }}Distributor{
 		clear:               make(chan struct{}, 0),
-		close:               make(chan struct{}, 0),
+		closer:               make(chan struct{}, 0),
 		subscribers:         make([]chan {{ sel "Type" }}, 0),
 		newSub:              make(chan chan {{ sel "Type" }}, 0),
 		messages:            make(chan {{ sel "Type" }}, buffer),
@@ -867,7 +867,7 @@ func (d *{{ sel "Name" }}Distributor) Stop() {
 		return
 	}
 
-	d.close <- struct{}{}
+	d.closer <- struct{}{}
 }
 
 // Start initializes the distributor to deliver messages to subscribers.
@@ -885,8 +885,14 @@ func (d *{{ sel "Name" }}Distributor) Start() {
 func (d *{{ sel "Name" }}Distributor) manage() {
 	defer atomic.AddInt64(&d.running, -1)
 
+	ticker := time.NewTimer(1 * time.Second)
+	defer ticker.Stop()
+
 	for {
 		select {
+		case <-ticker.C:
+			ticker.Reset(1 * time.Second)
+			continue
 		case <-d.clear:
 			d.subscribers = nil
 
@@ -914,7 +920,7 @@ func (d *{{ sel "Name" }}Distributor) manage() {
 					}
 				}(sub)
 			}
-		case <-d.close:
+		case <-d.closer:
 			return
 		}
 	}
