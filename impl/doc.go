@@ -8,5 +8,7 @@
 // @templaterTypesFor(id => ImplService, filename => stdin_writer_service.go, Name => WriteStdInService, Type => []byte)
 // @templaterTypesFor(id => ImplService, filename => stdout_reader_service.go, Name => ReadStdoutService, Type => []byte)
 // @templaterTypesFor(id => ImplService, filename => stdout_writer_service.go, Name => WriteStdoutService, Type => []byte)
+// @templaterTypesFor(id => ImplService, filename => stderr_reader_service.go, Name => ReadStderrService, Type => []byte)
+// @templaterTypesFor(id => ImplService, filename => stderr_writer_service.go, Name => WriteStderrService, Type => []byte)
 //
 package impl
