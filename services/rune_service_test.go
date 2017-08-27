@@ -12,17 +12,16 @@ import (
 	"github.com/influx6/faux/tests"
 )
 
-func TestBoolSliceCollect(t *testing.T) {
+func TestRuneCollect(t *testing.T) {
 	t.Logf("When all data is received before 3 second")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
-		outgoing := services.BoolSliceCollect(ctx, 10*time.Millisecond, incoming)
+		incoming := make(chan rune, 0)
+		outgoing := services.RuneCollect(ctx, 10*time.Millisecond, incoming)
 
-		// Awat
 		go func() {
 			defer close(incoming)
 
@@ -31,7 +30,7 @@ func TestBoolSliceCollect(t *testing.T) {
 				case <-ctx.Done():
 					return
 
-				case incoming <- []bool{(1%2 == 0)}:
+				case incoming <- rune('b'):
 
 					continue
 				}
@@ -56,8 +55,8 @@ func TestBoolSliceCollect(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
-		outgoing := services.BoolSliceCollect(ctx, 10*time.Millisecond, incoming)
+		incoming := make(chan rune, 0)
+		outgoing := services.RuneCollect(ctx, 10*time.Millisecond, incoming)
 
 		go func() {
 			for i := 20; i > 0; i-- {
@@ -65,7 +64,7 @@ func TestBoolSliceCollect(t *testing.T) {
 				case <-ctx.Done():
 					return
 
-				case incoming <- []bool{(1%2 == 0)}:
+				case incoming <- rune('b'):
 
 					time.Sleep(50 * time.Millisecond)
 					continue
@@ -85,13 +84,13 @@ func TestBoolSliceCollect(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
-		outgoing := services.BoolSliceCollect(context.Background(), 10*time.Millisecond, incoming)
+		incoming := make(chan rune, 0)
+		outgoing := services.RuneCollect(context.Background(), 10*time.Millisecond, incoming)
 
 		go func() {
 			for i := 3; i > 0; i-- {
 
-				incoming <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+				incoming <- rune('l')
 
 			}
 		}()
@@ -105,15 +104,15 @@ func TestBoolSliceCollect(t *testing.T) {
 	}
 }
 
-func TestBoolSlicePartialCollect(t *testing.T) {
+func TestRunePartialCollect(t *testing.T) {
 	t.Logf("When all data is received before 3 second")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
-		outgoing := services.BoolSlicePartialCollect(ctx, 10*time.Millisecond, incoming)
+		incoming := make(chan rune, 0)
+		outgoing := services.RunePartialCollect(ctx, 10*time.Millisecond, incoming)
 
 		go func() {
 			for i := 20; i > 0; i-- {
@@ -121,7 +120,7 @@ func TestBoolSlicePartialCollect(t *testing.T) {
 				case <-ctx.Done():
 					return
 
-				case incoming <- []bool{(1%2 == 0)}:
+				case incoming <- rune('b'):
 
 					continue
 				}
@@ -146,8 +145,8 @@ func TestBoolSlicePartialCollect(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
-		outgoing := services.BoolSlicePartialCollect(ctx, 10*time.Millisecond, incoming)
+		incoming := make(chan rune, 0)
+		outgoing := services.RunePartialCollect(ctx, 10*time.Millisecond, incoming)
 
 		go func() {
 			for i := 20; i > 0; i-- {
@@ -155,7 +154,9 @@ func TestBoolSlicePartialCollect(t *testing.T) {
 				case <-ctx.Done():
 					return
 
-				case incoming <- []bool{(1%2 == 0)}:
+				case incoming <- rune('b'):
+
+				case incoming <- rune('b'):
 
 					time.Sleep(60 * time.Millisecond)
 					continue
@@ -180,15 +181,15 @@ func TestBoolSlicePartialCollect(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
-		outgoing := services.BoolSlicePartialCollect(context.Background(), 10*time.Millisecond, incoming)
+		incoming := make(chan rune, 0)
+		outgoing := services.RunePartialCollect(context.Background(), 10*time.Millisecond, incoming)
 
 		go func() {
 			defer close(incoming)
 
 			for i := 3; i > 0; i-- {
 
-				incoming <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+				incoming <- rune('l')
 
 			}
 		}()
@@ -210,17 +211,17 @@ func TestBoolSlicePartialCollect(t *testing.T) {
 	}
 }
 
-func TestBoolSliceMutate(t *testing.T) {
+func TestRuneMutate(t *testing.T) {
 	t.Logf("When data is mutated but not received due to context expiration on receive")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
+		incoming := make(chan rune, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolSliceMutate(ctx, 2*time.Millisecond, func(item []bool) []bool { return item }, incoming)
+		outgoing := services.RuneMutate(ctx, 2*time.Millisecond, func(item rune) rune { return item }, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -235,9 +236,9 @@ func TestBoolSliceMutate(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
-		outgoing := services.BoolSliceMutate(ctx, 10*time.Millisecond, func(item []bool) []bool {
-			return item[0:2]
+		incoming := make(chan rune, 0)
+		outgoing := services.RuneMutate(ctx, 10*time.Millisecond, func(item rune) rune {
+			return item
 		}, incoming)
 
 		go func() {
@@ -245,18 +246,18 @@ func TestBoolSliceMutate(t *testing.T) {
 
 			for i := 1; i > 0; i-- {
 
-				incoming <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+				incoming <- rune('l')
 
 			}
 		}()
 
-		received1 := <-outgoing
-		if len(received1) != 2 {
-			tests.Failed("Should have recieved false as value but got %t", received1)
+		_, ok := <-outgoing
+		if !ok {
+			tests.Failed("Should have recieved item as value but got %t", ok)
 		}
 		tests.Passed("Should have recieved false as value")
 
-		_, ok := <-outgoing
+		_, ok = <-outgoing
 		if ok {
 			tests.Failed("Should have recieved close signal")
 		}
@@ -264,17 +265,17 @@ func TestBoolSliceMutate(t *testing.T) {
 	}
 }
 
-func TestBoolSliceFilter(t *testing.T) {
+func TestRuneFilter(t *testing.T) {
 	t.Logf("When data is filtered but not received due to context expiration on receive")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
+		incoming := make(chan rune, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolSliceFilter(ctx, 2*time.Millisecond, func(item []bool) bool {
+		outgoing := services.RuneFilter(ctx, 2*time.Millisecond, func(item rune) bool {
 			return true
 		}, incoming)
 		_, ok := <-outgoing
@@ -290,28 +291,28 @@ func TestBoolSliceFilter(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
-		outgoing := services.BoolSliceFilter(ctx, 10*time.Millisecond, func(item []bool) bool {
+		incoming := make(chan rune, 0)
+		outgoing := services.RuneFilter(ctx, 10*time.Millisecond, func(item rune) bool {
 			return true
 		}, incoming)
 
 		go func() {
 			defer close(incoming)
 
-			for i := 0; i > 0; i-- {
+			for i := 1; i > 0; i-- {
 
-				incoming <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+				incoming <- rune('l')
 
 			}
 		}()
 
-		received1 := <-outgoing
-		if len(received1) != 3 {
-			tests.Failed("Should have recieved only 3 as value but got %t", received1)
+		_, ok := <-outgoing
+		if !ok {
+			tests.Failed("Should have recieved only 1 item as value but got %t", ok)
 		}
 		tests.Passed("Should have recieved false as value")
 
-		_, ok := <-outgoing
+		_, ok = <-outgoing
 		if ok {
 			tests.Failed("Should have recieved close signal")
 		}
@@ -319,17 +320,17 @@ func TestBoolSliceFilter(t *testing.T) {
 	}
 }
 
-func TestBoolSliceCollectUntil(t *testing.T) {
+func TestRuneCollectUntil(t *testing.T) {
 	t.Logf("When data is collected until condition is met except when context expiration on receive")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
+		incoming := make(chan rune, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolSliceCollectUntil(ctx, 2*time.Millisecond, func(item [][]bool) bool { return true }, incoming)
+		outgoing := services.RuneCollectUntil(ctx, 2*time.Millisecond, func(item []rune) bool { return true }, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -344,8 +345,8 @@ func TestBoolSliceCollectUntil(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
-		outgoing := services.BoolSliceCollectUntil(ctx, 10*time.Millisecond, func(items [][]bool) bool {
+		incoming := make(chan rune, 0)
+		outgoing := services.RuneCollectUntil(ctx, 10*time.Millisecond, func(items []rune) bool {
 			return len(items) == 2
 		}, incoming)
 
@@ -354,7 +355,7 @@ func TestBoolSliceCollectUntil(t *testing.T) {
 
 			for i := 3; i > 0; i-- {
 
-				incoming <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+				incoming <- rune('l')
 
 			}
 		}()
@@ -379,17 +380,17 @@ func TestBoolSliceCollectUntil(t *testing.T) {
 	}
 }
 
-func TestBoolSliceMergeWithoutOrder(t *testing.T) {
+func TestRuneMergeWithoutOrder(t *testing.T) {
 	t.Logf("When data is merged from multiple channels in incoming order but context expires so nothing is received")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
+		incoming := make(chan rune, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolSliceMergeWithoutOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.RuneMergeWithoutOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -404,57 +405,57 @@ func TestBoolSliceMergeWithoutOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
+		incoming := make(chan rune, 0)
 		defer close(incoming)
 
-		incoming2 := make(chan []bool, 0)
+		incoming2 := make(chan rune, 0)
 		defer close(incoming2)
 
-		incoming3 := make(chan []bool, 0)
+		incoming3 := make(chan rune, 0)
 		defer close(incoming3)
 
-		outgoing := services.BoolSliceMergeWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.RuneMergeWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			time.Sleep(3 * time.Millisecond)
 
-			incoming <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming <- rune('l')
 
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
 
-			incoming2 <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming2 <- rune('l')
 
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
 
-			incoming3 <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming3 <- rune('l')
 
 		}()
 
 		received := <-outgoing
-		if len(received) != 9 {
+		if len(received) != 3 {
 			tests.Failed("Should have recieved 9 item slice but got %d item slice", len(received))
 		}
 		tests.Passed("Should have recieved 9 item slice")
 	}
 }
 
-func TestBoolSliceMergeInOrder(t *testing.T) {
+func TestRuneMergeInOrder(t *testing.T) {
 	t.Logf("When data is merged from multiple channels in provided order but context expires so nothing is received")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
+		incoming := make(chan rune, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolSliceMergeInOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.RuneMergeInOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -468,57 +469,57 @@ func TestBoolSliceMergeInOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
+		incoming := make(chan rune, 0)
 		defer close(incoming)
 
-		incoming2 := make(chan []bool, 0)
+		incoming2 := make(chan rune, 0)
 		defer close(incoming2)
 
-		incoming3 := make(chan []bool, 0)
+		incoming3 := make(chan rune, 0)
 		defer close(incoming3)
 
-		outgoing := services.BoolSliceMergeInOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.RuneMergeInOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			time.Sleep(3 * time.Millisecond)
 
-			incoming <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming <- rune('l')
 
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
 
-			incoming2 <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming2 <- rune('l')
 
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
 
-			incoming3 <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming3 <- rune('l')
 
 		}()
 
 		received := <-outgoing
-		if len(received) != 9 {
+		if len(received) != 3 {
 			tests.Failed("Should have recieved 9 item slice but got %d item slice", len(received))
 		}
 		tests.Passed("Should have recieved 9 item slice")
 	}
 }
 
-func TestBoolSliceCombinePartiallyWithoutOrder(t *testing.T) {
+func TestRuneCombinePartiallyWithoutOrder(t *testing.T) {
 	t.Logf("When data is combined from multiple channels without provided order but context expires so nothing is received")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
+		incoming := make(chan rune, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolSliceCombinePartiallyWithoutOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.RuneCombinePartiallyWithoutOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -532,35 +533,35 @@ func TestBoolSliceCombinePartiallyWithoutOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
+		incoming := make(chan rune, 0)
 		defer close(incoming)
 
-		incoming2 := make(chan []bool, 0)
+		incoming2 := make(chan rune, 0)
 		defer close(incoming2)
 
-		incoming3 := make(chan []bool, 0)
+		incoming3 := make(chan rune, 0)
 		defer close(incoming3)
 
-		outgoing := services.BoolSliceCombinePartiallyWithoutOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.RuneCombinePartiallyWithoutOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			time.Sleep(3 * time.Millisecond)
 
-			incoming <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming <- rune('l')
 
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
 
-			incoming2 <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming2 <- rune('l')
 
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
 
-			incoming3 <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming3 <- rune('l')
 
 		}()
 
@@ -573,17 +574,17 @@ func TestBoolSliceCombinePartiallyWithoutOrder(t *testing.T) {
 	}
 }
 
-func TestBoolSliceCombineWithoutOrder(t *testing.T) {
+func TestRuneCombineWithoutOrder(t *testing.T) {
 	t.Logf("When data is combined from multiple channels in incoming order but context expires so nothing is received")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
+		incoming := make(chan rune, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolSliceCombineWithoutOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.RuneCombineWithoutOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -598,19 +599,19 @@ func TestBoolSliceCombineWithoutOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
+		incoming := make(chan rune, 0)
 
-		incoming2 := make(chan []bool, 0)
+		incoming2 := make(chan rune, 0)
 
-		incoming3 := make(chan []bool, 0)
+		incoming3 := make(chan rune, 0)
 
-		outgoing := services.BoolSliceCombineWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.RuneCombineWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			defer close(incoming)
 			time.Sleep(3 * time.Millisecond)
 
-			incoming <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming <- rune('l')
 
 		}()
 
@@ -618,7 +619,9 @@ func TestBoolSliceCombineWithoutOrder(t *testing.T) {
 			defer close(incoming2)
 			time.Sleep(1 * time.Millisecond)
 
-			incoming2 <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming2 <- rune('l')
+
+			incoming2 <- rune('l')
 
 		}()
 
@@ -626,7 +629,7 @@ func TestBoolSliceCombineWithoutOrder(t *testing.T) {
 			defer close(incoming3)
 			time.Sleep(2 * time.Millisecond)
 
-			incoming3 <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming3 <- rune('l')
 
 		}()
 
@@ -639,17 +642,17 @@ func TestBoolSliceCombineWithoutOrder(t *testing.T) {
 	}
 }
 
-func TestBoolSliceCombineInOrder(t *testing.T) {
+func TestRuneCombineInOrder(t *testing.T) {
 	t.Logf("When data is merged from multiple channels in provided order but context expires so nothing is received")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
+		incoming := make(chan rune, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolSliceCombineInOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.RuneCombineInOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -663,35 +666,35 @@ func TestBoolSliceCombineInOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
+		incoming := make(chan rune, 0)
 		defer close(incoming)
 
-		incoming2 := make(chan []bool, 0)
+		incoming2 := make(chan rune, 0)
 		defer close(incoming2)
 
-		incoming3 := make(chan []bool, 0)
+		incoming3 := make(chan rune, 0)
 		defer close(incoming3)
 
-		outgoing := services.BoolSliceCombineInOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.RuneCombineInOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			time.Sleep(3 * time.Millisecond)
 
-			incoming <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming <- rune('l')
 
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
 
-			incoming2 <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming2 <- rune('l')
 
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
 
-			incoming3 <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming3 <- rune('l')
 
 		}()
 
@@ -703,17 +706,17 @@ func TestBoolSliceCombineInOrder(t *testing.T) {
 	}
 }
 
-func TestBoolSliceCombineInPartialOrder(t *testing.T) {
+func TestRuneCombineInPartialOrder(t *testing.T) {
 	t.Logf("When data is combined from multiple channels in provided order but context expires so nothing is received")
 	{
 
 		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
+		incoming := make(chan rune, 0)
 		defer close(incoming)
 
-		outgoing := services.BoolSliceCombineInPartialOrder(ctx, 2*time.Millisecond, incoming)
+		outgoing := services.RuneCombineInPartialOrder(ctx, 2*time.Millisecond, incoming)
 
 		_, ok := <-outgoing
 		if ok {
@@ -727,36 +730,38 @@ func TestBoolSliceCombineInPartialOrder(t *testing.T) {
 		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancl()
 
-		incoming := make(chan []bool, 0)
+		incoming := make(chan rune, 0)
 
-		incoming2 := make(chan []bool, 0)
+		incoming2 := make(chan rune, 0)
 		defer close(incoming2)
 
-		incoming3 := make(chan []bool, 0)
+		incoming3 := make(chan rune, 0)
 		defer close(incoming3)
 
-		outgoing := services.BoolSliceCombineInPartialOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
+		outgoing := services.RuneCombineInPartialOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
 
 		go func() {
 			defer close(incoming)
 
 			time.Sleep(3 * time.Millisecond)
 
-			incoming <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming <- rune('l')
+
+			incoming <- rune('l')
 
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
 
-			incoming2 <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming2 <- rune('l')
 
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
 
-			incoming3 <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+			incoming3 <- rune('l')
 
 		}()
 
@@ -769,13 +774,13 @@ func TestBoolSliceCombineInPartialOrder(t *testing.T) {
 	}
 }
 
-func TestBoolSliceDistributor(t *testing.T) {
-	dist := services.NewBoolSliceDisributor(0, 1*time.Second)
+func TestRuneDistributor(t *testing.T) {
+	dist := services.NewRuneDisributor(0, 1*time.Second)
 	dist.Start()
 
-	incoming := make(chan []bool, 1)
-	incoming2 := make(chan []bool, 1)
-	incoming3 := make(chan []bool, 1)
+	incoming := make(chan rune, 1)
+	incoming2 := make(chan rune, 1)
+	incoming3 := make(chan rune, 1)
 
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
@@ -783,7 +788,7 @@ func TestBoolSliceDistributor(t *testing.T) {
 
 	dist.Publish(
 
-		[]bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)},
+		rune('l'),
 	)
 
 	select {
@@ -792,12 +797,12 @@ func TestBoolSliceDistributor(t *testing.T) {
 	case initial := <-incoming:
 		tests.Passed("Should have received a matching data on first channel")
 
-		if !isBoolSliceEqualSlice(initial, <-incoming2) {
+		if !isRuneEqual(initial, <-incoming2) {
 			tests.Failed("Should have received a matching data on second channel")
 		}
 		tests.Passed("Should have received a matching data on second channel")
 
-		if !isBoolSliceEqualSlice(initial, <-incoming3) {
+		if !isRuneEqual(initial, <-incoming3) {
 			tests.Failed("Should have received a matching data on third channel")
 		}
 		tests.Passed("Should have received a matching data on third channel")
@@ -807,7 +812,7 @@ func TestBoolSliceDistributor(t *testing.T) {
 
 	dist.PublishDeadline(
 
-		[]bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)},
+		rune('l'),
 
 		1*time.Millisecond,
 	)
@@ -818,28 +823,22 @@ func TestBoolSliceDistributor(t *testing.T) {
 	tests.Passed("Should not have received any items after publisher is stopped")
 }
 
-func isBoolSliceEqualSlice(item1 []bool, item2 []bool) bool {
+func isRuneEqual(item1, item2 rune) bool {
 
-	if len(item1) != len(item2) {
+	if item1 != item2 {
 		return false
-	}
-
-	for index, item := range item1 {
-		if item2[index] != item {
-			return false
-		}
 	}
 
 	return true
 }
 
-func isBoolSliceEqualDoubleSlice(item1 [][]bool, item2 [][]bool) bool {
+func isRuneEqualSlice(item1 []rune, item2 []rune) bool {
 	if len(item1) != len(item2) {
 		return false
 	}
 
 	for index, item := range item1 {
-		if !isBoolSliceEqualSlice(item, item2[index]) {
+		if !isRuneEqual(item, item2[index]) {
 			return false
 		}
 	}

@@ -17,6 +17,8 @@ func Test{{sel "Name"}}Collect(t *testing.T) {
 		incoming := make(chan {{sel "Type"}}, 0)
 		outgoing := services.{{sel "Name"}}Collect(ctx, 10*time.Millisecond, incoming)
 
+
+		// Awat
 		go func() {
 			defer close(incoming)
 
@@ -24,6 +26,9 @@ func Test{{sel "Name"}}Collect(t *testing.T) {
 				select {
 				case <-ctx.Done():
 					return
+				{{ if  eq (sel "Type") "[]byte" }}
+				case incoming <- {{sel "Type"}}("bashful"):
+				{{ end }}
 				{{ if eq (sel "Type") "[]uint" }}
 				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
@@ -37,19 +42,19 @@ func Test{{sel "Name"}}Collect(t *testing.T) {
 				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				case incoming <- {{sel "Type"}}{1.0}:
@@ -64,19 +69,97 @@ func Test{{sel "Name"}}Collect(t *testing.T) {
 				case incoming <- {{sel "Type"}}{1.0}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				case incoming <- {{sel "Type"}}{(i%2 == 0)}:
+				case incoming <- {{sel "Type"}}{(1%2 == 0)}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				case incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i))}:
+				case incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item"))}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				case incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}:
+				case incoming <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}:
+				{{ end }}
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				case incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				case incoming <- {{sel "Type"}}{"day":"monday"}:
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				case incoming <- {{sel "Type"}}{"day":"monday"}:
+				{{ end }}
+				{{ if  eq (sel "Type") "rune" }}
+				case incoming <- {{sel "Type"}}('b'):
+				{{ end }}
+				{{ if  eq (sel "Type") "byte" }}
+				case incoming <- {{sel "Type"}}('b'):
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				case incoming <- {{sel "Type"}}("bashful"):
+				{{ end }}
+				{{ if eq (sel "Type") "uint" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				case incoming <- 1.0:
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				case incoming <- 1.0:
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				case incoming <- 1.0:
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				case incoming <- 1.0:
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				case incoming <- (1%2 == 0):
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				case incoming <- errors.New(fmt.Sprintf("%q","item")):
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				case incoming <- fmt.Sprintf("%q","monday"):
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				case incoming <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }:
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				case incoming <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }:
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				case incoming <- {{sel "Type"}}{ map[string]string{"day":"monday"} }:
 				{{ end }}
 					continue
 				}
@@ -109,7 +192,90 @@ func Test{{sel "Name"}}Collect(t *testing.T) {
 				select {
 				case <-ctx.Done():
 					return
-				{{ if  eq (sel "Type") "[]uint" }}
+
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				case incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				case incoming <- {{sel "Type"}}{"day":"monday"}:
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				case incoming <- {{sel "Type"}}{"day":"monday"}:
+				{{ end }}
+
+				{{ if  eq (sel "Type") "rune" }}
+				case incoming <- {{sel "Type"}}('b'):
+				{{ end }}
+				{{ if  eq (sel "Type") "byte" }}
+				case incoming <- {{sel "Type"}}('b'):
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				case incoming <- {{sel "Type"}}("bashful"):
+				{{ end }}
+				{{ if eq (sel "Type") "uint" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				case incoming <- 1.0:
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				case incoming <- 1.0:
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				case incoming <- 1.0:
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				case incoming <- 1.0:
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				case incoming <- (1%2 == 0):
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				case incoming <- errors.New(fmt.Sprintf("%q","item")):
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				case incoming <- fmt.Sprintf("%q","monday"):
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				case incoming <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }:
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				case incoming <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }:
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				case incoming <- {{sel "Type"}}{ map[string]string{"day":"monday"} }:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				case incoming <- {{sel "Type"}}("bashful"):
+				{{ end }}
+				{{ if eq (sel "Type") "[]uint" }}
 				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
@@ -122,19 +288,19 @@ func Test{{sel "Name"}}Collect(t *testing.T) {
 				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				case incoming <- {{sel "Type"}}{1.0}:
@@ -149,19 +315,19 @@ func Test{{sel "Name"}}Collect(t *testing.T) {
 				case incoming <- {{sel "Type"}}{1.0}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				case incoming <- {{sel "Type"}}{(i%2 == 0)}:
+				case incoming <- {{sel "Type"}}{(1%2 == 0)}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				case incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i))}:
+				case incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item"))}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				case incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}:
+				case incoming <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}:
 				{{ end }}
 					time.Sleep(50 * time.Millisecond)
 					continue
@@ -186,11 +352,91 @@ func Test{{sel "Name"}}Collect(t *testing.T) {
 
 		go func() {
 			for i := 3; i > 0; i-- {
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+  
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				 incoming <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming <- {{sel "Type"}}{1,2,3}
@@ -199,19 +445,19 @@ func Test{{sel "Name"}}Collect(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -226,19 +472,16 @@ func Test{{sel "Name"}}Collect(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 			}
 		}()
@@ -267,7 +510,88 @@ func Test{{sel "Name"}}PartialCollect(t *testing.T) {
 				select {
 				case <-ctx.Done():
 					return
-				{{ if  eq (sel "Type") "[]uint" }}
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				case incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				case incoming <- {{sel "Type"}}{"day":"monday"}:
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				case incoming <- {{sel "Type"}}{"day":"monday"}:
+				{{ end }}
+				{{ if  eq (sel "Type") "rune" }}
+				case incoming <- {{sel "Type"}}('b'):
+				{{ end }}
+				{{ if  eq (sel "Type") "byte" }}
+				case incoming <- {{sel "Type"}}('b'):
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				case incoming <- {{sel "Type"}}("bashful"):
+				{{ end }}
+				{{ if eq (sel "Type") "uint" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				case incoming <- 1.0:
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				case incoming <- 1.0:
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				case incoming <- 1.0:
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				case incoming <- 1.0:
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				case incoming <- (1%2 == 0):
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				case incoming <- errors.New(fmt.Sprintf("%q","item")):
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				case incoming <- fmt.Sprintf("%q","monday"):
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				case incoming <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }:
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				case incoming <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }:
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				case incoming <- {{sel "Type"}}{ map[string]string{"day":"monday"} }:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				case incoming <- {{sel "Type"}}("bashful"):
+				{{ end }}
+				{{ if eq (sel "Type") "[]uint" }}
 				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
@@ -280,19 +604,19 @@ func Test{{sel "Name"}}PartialCollect(t *testing.T) {
 				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				case incoming <- {{sel "Type"}}{1.0}:
@@ -307,19 +631,19 @@ func Test{{sel "Name"}}PartialCollect(t *testing.T) {
 				case incoming <- {{sel "Type"}}{1.0}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				case incoming <- {{sel "Type"}}{(i%2 == 0)}:
+				case incoming <- {{sel "Type"}}{(1%2 == 0)}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				case incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i))}:
+				case incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item"))}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				case incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}:
+				case incoming <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}:
 				{{ end }}
 					continue
 				}
@@ -352,7 +676,89 @@ func Test{{sel "Name"}}PartialCollect(t *testing.T) {
 				select {
 				case <-ctx.Done():
 					return
-				{{ if  eq (sel "Type") "[]uint" }}
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				case incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				case incoming <- {{sel "Type"}}{"day":"monday"}:
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				case incoming <- {{sel "Type"}}{"day":"monday"}:
+				{{ end }}
+
+				{{ if  eq (sel "Type") "rune" }}
+				case incoming <- {{sel "Type"}}('b'):
+				{{ end }}
+				{{ if  eq (sel "Type") "byte" }}
+				case incoming <- {{sel "Type"}}('b'):
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				case incoming <- {{sel "Type"}}("bashful"):
+				{{ end }}
+				{{ if eq (sel "Type") "uint" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				case incoming <- 1.0:
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				case incoming <- 1.0:
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				case incoming <- 1.0:
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				case incoming <- 1.0:
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				case incoming <- (1%2 == 0):
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				case incoming <- 1:
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				case incoming <- errors.New(fmt.Sprintf("%q","item")):
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				case incoming <- fmt.Sprintf("%q","monday"):
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				case incoming <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }:
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				case incoming <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }:
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				case incoming <- {{sel "Type"}}{ map[string]string{"day":"monday"} }:
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				case incoming <- {{sel "Type"}}("bashful"):
+				{{ end }}
+				{{ if eq (sel "Type") "[]uint" }}
 				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
@@ -365,19 +771,19 @@ func Test{{sel "Name"}}PartialCollect(t *testing.T) {
 				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				case incoming <- {{sel "Type"}}{1.0}:
@@ -392,19 +798,19 @@ func Test{{sel "Name"}}PartialCollect(t *testing.T) {
 				case incoming <- {{sel "Type"}}{1.0}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				case incoming <- {{sel "Type"}}{(i%2 == 0)}:
+				case incoming <- {{sel "Type"}}{(1%2 == 0)}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				case incoming <- {{sel "Type"}}{i}:
+				case incoming <- {{sel "Type"}}{1}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				case incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i))}:
+				case incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item"))}:
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				case incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}:
+				case incoming <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}:
 				{{ end }}
 					time.Sleep(60 * time.Millisecond)
 					continue
@@ -436,11 +842,89 @@ func Test{{sel "Name"}}PartialCollect(t *testing.T) {
 			defer close(incoming)
 
 			for i := 3; i > 0; i-- {
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				 incoming <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming <- {{sel "Type"}}{1,2,3}
@@ -449,19 +933,19 @@ func Test{{sel "Name"}}PartialCollect(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -476,19 +960,16 @@ func Test{{sel "Name"}}PartialCollect(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 			}
 		}()
@@ -544,11 +1025,91 @@ func Test{{sel "Name"}}Mutate(t *testing.T) {
 			defer close(incoming)
 
 			for i :=1; i > 0; i-- {
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+  
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				 incoming <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming <- {{sel "Type"}}{1,2,3}
@@ -557,19 +1118,19 @@ func Test{{sel "Name"}}Mutate(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -584,19 +1145,16 @@ func Test{{sel "Name"}}Mutate(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 			}
 		}()
@@ -649,12 +1207,92 @@ func Test{{sel "Name"}}Filter(t *testing.T) {
 		go func() {
 			defer close(incoming)
 
-			for i := 1; i > 0; i-- {
+			for i := 0; i > 0; i-- {
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+  
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				 incoming <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming <- {{sel "Type"}}{1,2,3}
@@ -663,19 +1301,19 @@ func Test{{sel "Name"}}Filter(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -690,19 +1328,16 @@ func Test{{sel "Name"}}Filter(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 			}
 		}()
@@ -751,15 +1386,96 @@ func Test{{sel "Name"}}CollectUntil(t *testing.T) {
 			return len(items) == 2
 		}, incoming)
 
+		
 		go func() {
 			defer close(incoming)
 
 			for i := 3; i > 0; i-- {
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+  
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				 incoming <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming <- {{sel "Type"}}{1,2,3}
@@ -768,19 +1484,19 @@ func Test{{sel "Name"}}CollectUntil(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -795,19 +1511,16 @@ func Test{{sel "Name"}}CollectUntil(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 			}
 		}()
@@ -868,13 +1581,96 @@ func Test{{sel "Name"}}MergeWithoutOrder(t *testing.T) {
 
 		outgoing := services.{{sel "Name"}}MergeWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
 
+	
+		
+	
 		go func() {
 			time.Sleep(3 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+  
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				 incoming <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming <- {{sel "Type"}}{1,2,3}
@@ -883,19 +1679,19 @@ func Test{{sel "Name"}}MergeWithoutOrder(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -910,29 +1706,106 @@ func Test{{sel "Name"}}MergeWithoutOrder(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming2 <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming2 <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming2 <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming2 <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming2 <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				incoming2 <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming2 <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming2 <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming2 <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming2 <- {{sel "Type"}}{1, 2, ,3}
+				 incoming2 <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming2 <- {{sel "Type"}}{1,2,3}
@@ -941,19 +1814,19 @@ func Test{{sel "Name"}}MergeWithoutOrder(t *testing.T) {
 				 incoming2 <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -968,29 +1841,106 @@ func Test{{sel "Name"}}MergeWithoutOrder(t *testing.T) {
 				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming2 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming3 <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming3 <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming3 <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming3 <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming3 <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				incoming3 <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming3 <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming3 <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming3 <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming3 <- {{sel "Type"}}{1, 2, ,3}
+				 incoming3 <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming3 <- {{sel "Type"}}{1,2,3}
@@ -999,19 +1949,19 @@ func Test{{sel "Name"}}MergeWithoutOrder(t *testing.T) {
 				 incoming3 <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -1026,19 +1976,16 @@ func Test{{sel "Name"}}MergeWithoutOrder(t *testing.T) {
 				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming3 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
@@ -1085,13 +2032,96 @@ func Test{{sel "Name"}}MergeInOrder(t *testing.T) {
 
 		outgoing := services.{{sel "Name"}}MergeInOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
 
+	
+		
+	
 		go func() {
 			time.Sleep(3 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+  
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				 incoming <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming <- {{sel "Type"}}{1,2,3}
@@ -1100,19 +2130,19 @@ func Test{{sel "Name"}}MergeInOrder(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -1127,29 +2157,106 @@ func Test{{sel "Name"}}MergeInOrder(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming2 <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming2 <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming2 <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming2 <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming2 <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				incoming2 <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming2 <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming2 <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming2 <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming2 <- {{sel "Type"}}{1, 2, ,3}
+				 incoming2 <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming2 <- {{sel "Type"}}{1,2,3}
@@ -1158,19 +2265,19 @@ func Test{{sel "Name"}}MergeInOrder(t *testing.T) {
 				 incoming2 <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -1185,29 +2292,106 @@ func Test{{sel "Name"}}MergeInOrder(t *testing.T) {
 				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming2 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming3 <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming3 <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming3 <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming3 <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming3 <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				incoming3 <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming3 <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming3 <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming3 <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming3 <- {{sel "Type"}}{1, 2, ,3}
+				 incoming3 <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming3 <- {{sel "Type"}}{1,2,3}
@@ -1216,19 +2400,19 @@ func Test{{sel "Name"}}MergeInOrder(t *testing.T) {
 				 incoming3 <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -1243,19 +2427,16 @@ func Test{{sel "Name"}}MergeInOrder(t *testing.T) {
 				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming3 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
@@ -1302,13 +2483,96 @@ func Test{{sel "Name"}}CombinePartiallyWithoutOrder(t *testing.T) {
 
 		outgoing := services.{{sel "Name"}}CombinePartiallyWithoutOrder(ctx, 1*time.Millisecond, incoming, incoming2, incoming3)
 
+	
+		
+	
 		go func() {
 			time.Sleep(3 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+  
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				 incoming <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming <- {{sel "Type"}}{1,2,3}
@@ -1317,19 +2581,19 @@ func Test{{sel "Name"}}CombinePartiallyWithoutOrder(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -1344,29 +2608,106 @@ func Test{{sel "Name"}}CombinePartiallyWithoutOrder(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming2 <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming2 <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming2 <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming2 <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming2 <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				incoming2 <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming2 <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming2 <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming2 <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming2 <- {{sel "Type"}}{1, 2, ,3}
+				 incoming2 <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming2 <- {{sel "Type"}}{1,2,3}
@@ -1375,19 +2716,19 @@ func Test{{sel "Name"}}CombinePartiallyWithoutOrder(t *testing.T) {
 				 incoming2 <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -1402,29 +2743,106 @@ func Test{{sel "Name"}}CombinePartiallyWithoutOrder(t *testing.T) {
 				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming2 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming3 <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming3 <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming3 <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming3 <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming3 <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				incoming3 <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming3 <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming3 <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming3 <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming3 <- {{sel "Type"}}{1, 2, ,3}
+				 incoming3 <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming3 <- {{sel "Type"}}{1,2,3}
@@ -1433,19 +2851,19 @@ func Test{{sel "Name"}}CombinePartiallyWithoutOrder(t *testing.T) {
 				 incoming3 <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -1460,19 +2878,16 @@ func Test{{sel "Name"}}CombinePartiallyWithoutOrder(t *testing.T) {
 				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming3 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
@@ -1518,14 +2933,97 @@ func Test{{sel "Name"}}CombineWithoutOrder(t *testing.T) {
 
 		outgoing := services.{{sel "Name"}}CombineWithoutOrder(ctx, 10*time.Millisecond, incoming, incoming2, incoming3)
 
+		
+	
+	
 		go func() {
 			defer close(incoming)
 			time.Sleep(3 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+  
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				 incoming <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming <- {{sel "Type"}}{1,2,3}
@@ -1534,19 +3032,19 @@ func Test{{sel "Name"}}CombineWithoutOrder(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -1561,30 +3059,107 @@ func Test{{sel "Name"}}CombineWithoutOrder(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
 		go func() {
 			defer close(incoming2)
 			time.Sleep(1 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming2 <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming2 <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming2 <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming2 <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming2 <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				incoming2 <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming2 <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming2 <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming2 <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming2 <- {{sel "Type"}}{1, 2, ,3}
+				 incoming2 <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming2 <- {{sel "Type"}}{1,2,3}
@@ -1593,19 +3168,19 @@ func Test{{sel "Name"}}CombineWithoutOrder(t *testing.T) {
 				 incoming2 <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -1620,30 +3195,107 @@ func Test{{sel "Name"}}CombineWithoutOrder(t *testing.T) {
 				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming2 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
 		go func() {
 			defer close(incoming3)
 			time.Sleep(2 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming3 <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming3 <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming3 <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming3 <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming3 <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				incoming3 <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming3 <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming3 <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming3 <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming3 <- {{sel "Type"}}{1, 2, ,3}
+				 incoming3 <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming3 <- {{sel "Type"}}{1,2,3}
@@ -1652,19 +3304,19 @@ func Test{{sel "Name"}}CombineWithoutOrder(t *testing.T) {
 				 incoming3 <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -1679,19 +3331,16 @@ func Test{{sel "Name"}}CombineWithoutOrder(t *testing.T) {
 				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming3 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
@@ -1739,13 +3388,95 @@ func Test{{sel "Name"}}CombineInOrder(t *testing.T) {
 
 		outgoing := services.{{sel "Name"}}CombineInOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
 
+		
+	
+	
 		go func() {
 			time.Sleep(3 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				 incoming <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming <- {{sel "Type"}}{1,2,3}
@@ -1754,19 +3485,19 @@ func Test{{sel "Name"}}CombineInOrder(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -1781,29 +3512,106 @@ func Test{{sel "Name"}}CombineInOrder(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming2 <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming2 <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming2 <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming2 <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming2 <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				incoming2 <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming2 <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming2 <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming2 <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming2 <- {{sel "Type"}}{1, 2, ,3}
+				 incoming2 <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming2 <- {{sel "Type"}}{1,2,3}
@@ -1812,19 +3620,19 @@ func Test{{sel "Name"}}CombineInOrder(t *testing.T) {
 				 incoming2 <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -1839,29 +3647,106 @@ func Test{{sel "Name"}}CombineInOrder(t *testing.T) {
 				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming2 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming3 <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming3 <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming3 <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming3 <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming3 <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				incoming3 <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming3 <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming3 <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming3 <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming3 <- {{sel "Type"}}{1, 2, ,3}
+				 incoming3 <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming3 <- {{sel "Type"}}{1,2,3}
@@ -1870,19 +3755,19 @@ func Test{{sel "Name"}}CombineInOrder(t *testing.T) {
 				 incoming3 <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -1897,19 +3782,16 @@ func Test{{sel "Name"}}CombineInOrder(t *testing.T) {
 				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming3 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
@@ -1955,15 +3837,97 @@ func Test{{sel "Name"}}CombineInPartialOrder(t *testing.T) {
 
 		outgoing := services.{{sel "Name"}}CombineInPartialOrder(ctx, 2*time.Millisecond, incoming, incoming2, incoming3)
 
+		
+	
+	
 		go func() {
 			defer close(incoming)
 
 			time.Sleep(3 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+  
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming <- {{sel "Type"}}{1, 2, ,3}
+				 incoming <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming <- {{sel "Type"}}{1,2,3}
@@ -1972,19 +3936,19 @@ func Test{{sel "Name"}}CombineInPartialOrder(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming <- {{sel "Type"}}{i, i *2, *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -1999,29 +3963,106 @@ func Test{{sel "Name"}}CombineInPartialOrder(t *testing.T) {
 				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(1 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming2 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming2 <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming2 <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming2 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming2 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming2 <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming2 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming2 <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming2 <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				incoming2 <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming2 <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming2 <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming2 <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming2 <- {{sel "Type"}}{1, 2, ,3}
+				 incoming2 <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming2 <- {{sel "Type"}}{1,2,3}
@@ -2030,19 +4071,19 @@ func Test{{sel "Name"}}CombineInPartialOrder(t *testing.T) {
 				 incoming2 <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming2 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -2057,29 +4098,105 @@ func Test{{sel "Name"}}CombineInPartialOrder(t *testing.T) {
 				 incoming2 <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming2 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming2 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming2 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming2 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming2 <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
 		go func() {
 			time.Sleep(2 * time.Millisecond)
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming3 <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming3 <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming3 <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming3 <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming3 <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming3 <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming3 <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming3 <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming3 <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				incoming3 <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming3 <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming3 <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming3 <- {{sel "Type"}}("bashful")
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				 incoming3 <- {{sel "Type"}}{1, 2, ,3}
+				 incoming3 <- {{sel "Type"}}{1, 2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				 incoming3 <- {{sel "Type"}}{1,2,3}
@@ -2088,19 +4205,19 @@ func Test{{sel "Name"}}CombineInPartialOrder(t *testing.T) {
 				 incoming3 <- {{sel "Type"}}{1,2,3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				 incoming3 <- {{sel "Type"}}{i, i * 2, i *3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
@@ -2115,19 +4232,16 @@ func Test{{sel "Name"}}CombineInPartialOrder(t *testing.T) {
 				 incoming3 <- {{sel "Type"}}{1.0, 2.0, 3.0}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				 incoming3 <- {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				 incoming3 <- {{sel "Type"}}{i, i *2, i * 3}
+				 incoming3 <- {{sel "Type"}}{1, 2, 3}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))}
+				 incoming3 <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%d", i)}
+				 incoming3 <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
 				{{ end }}
 		}()
 
@@ -2152,12 +4266,93 @@ func Test{{sel "Name"}}Distributor(t *testing.T) {
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
 
+	
+	
+
 	dist.Publish(
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				{{sel "Type"}}{"day":"monday"},
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				{{sel "Type"}}{"day":"monday"},
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				  {{sel "Type"}}{"day":"monday"},
+				{{ end }}
+				{{ if  eq (sel "Type") "byte" }}
+				  {{sel "Type"}}('l'),
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				  {{sel "Type"}}("bashful"),
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				  1,
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				  2,
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				  1,
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				  1,
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				  2,
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				  2,
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				  2,
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				  2,
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				  2,
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				  2.0,
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				  2.0,
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				  2.0,
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				  2.0,
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				  1%2 == 0,
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				  2,
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				  errors.New(fmt.Sprintf("%q","item")),
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				  fmt.Sprintf("%q","monday"),
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				{{sel "Type"}}{ map[string]interface{}{"day":"monday"} },
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				{{sel "Type"}}{ map[string]string{"day":"monday"} },
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				{{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} },
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				{{sel "Type"}}("bashful"),
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				  {{sel "Type"}}{1, 2, 3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				  {{sel "Type"}}{1, 2, ,3},
+				  {{sel "Type"}}{1, 2,3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				  {{sel "Type"}}{1,2,3},
@@ -2166,19 +4361,19 @@ func Test{{sel "Name"}}Distributor(t *testing.T) {
 				  {{sel "Type"}}{1,2,3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				  {{sel "Type"}}{i, i * 2, i *3},
+				  {{sel "Type"}}{1, 2, 3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				  {{sel "Type"}}{i, i *2, *3},
+				  {{sel "Type"}}{1, 2, 3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				  {{sel "Type"}}{i, i * 2, i * 3},
+				  {{sel "Type"}}{1, 2, 3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				  {{sel "Type"}}{i, i * 2, i *3},
+				  {{sel "Type"}}{1, 2, 3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				  {{sel "Type"}}{i, i *2, i * 3},
+				  {{sel "Type"}}{1, 2, 3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				  {{sel "Type"}}{1.0, 2.0, 3.0},
@@ -2193,19 +4388,16 @@ func Test{{sel "Name"}}Distributor(t *testing.T) {
 				  {{sel "Type"}}{1.0, 2.0, 3.0},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				  {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				  {{sel "Type"}}{i, i *2, i * 3},
+				  {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				  {{sel "Type"}}{i, i *2, i * 3},
+				  {{sel "Type"}}{1, 2, 3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				  {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))},
+				  {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				  {{sel "Type"}}{fmt.Sprintf("%d", i)},
+				  {{sel "Type"}}{fmt.Sprintf("%q","monday")},
 				{{ end }}
 	)
 
@@ -2229,11 +4421,89 @@ func Test{{sel "Name"}}Distributor(t *testing.T) {
 	dist.Stop()
 
 	dist.PublishDeadline(
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 {{sel "Type"}}{"day":"monday"},
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 {{sel "Type"}}{"day":"monday"},
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				  {{sel "Type"}}{"day":"monday"},
+				{{ end }}
+				{{ if  eq (sel "Type") "byte" }}
+				  {{sel "Type"}}('l'),
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				  {{sel "Type"}}("bashful"),
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				  1,
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				  2,
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				  1,
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				  1,
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				  2,
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				  2,
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				  2,
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				  2,
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				  2,
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				  2.0,
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				  2.0,
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				  2.0,
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				  2.0,
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				  1%2 == 0,
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				  2,
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				  errors.New(fmt.Sprintf("%q","item")),
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+					fmt.Sprintf("%q","monday"),
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+					{{sel "Type"}}{ map[string]interface{}{"day":"monday"} },
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+					{{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} },
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+					{{sel "Type"}}{ map[string]string{"day":"monday"} },
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+					{{sel "Type"}}("bashful"),
+				{{ end }}
 				{{ if  eq (sel "Type") "[]uint" }}
 				  {{sel "Type"}}{1, 2, 3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint8" }}
-				  {{sel "Type"}}{1, 2, ,3},
+				  {{sel "Type"}}{1, 2,3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]uint32" }}
 				  {{sel "Type"}}{1,2,3},
@@ -2242,19 +4512,19 @@ func Test{{sel "Name"}}Distributor(t *testing.T) {
 				  {{sel "Type"}}{1,2,3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int64" }}
-				  {{sel "Type"}}{i, i * 2, i *3},
+				  {{sel "Type"}}{1, 2, 3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int32" }}
-				  {{sel "Type"}}{i, i *2, *3},
+				  {{sel "Type"}}{1, 2, 3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int16" }}
-				  {{sel "Type"}}{i, i * 2, i * 3},
+				  {{sel "Type"}}{1, 2, 3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int8" }}
-				  {{sel "Type"}}{i, i * 2, i *3},
+				  {{sel "Type"}}{1, 2, 3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]int" }}
-				  {{sel "Type"}}{i, i *2, i * 3},
+				  {{sel "Type"}}{1, 2, 3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]complex128" }}
 				  {{sel "Type"}}{1.0, 2.0, 3.0},
@@ -2269,19 +4539,16 @@ func Test{{sel "Name"}}Distributor(t *testing.T) {
 				  {{sel "Type"}}{1.0, 2.0, 3.0},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]bool" }}
-				  {{sel "Type"}}{(i%2 == 0, (i * 2)%2 == 0, (i * 2)%2 == 0)}
-				{{ end }}
-				{{ if  eq (sel "Type") "[]int" }}
-				  {{sel "Type"}}{i, i *2, i * 3},
+				  {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]interface{}" }}
-				  {{sel "Type"}}{i, i *2, i * 3},
+				  {{sel "Type"}}{1, 2, 3},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]error" }}
-				  {{sel "Type"}}{errors.New(fmt.Sprintf("%d",i)), errors.New(fmt.Sprintf("%d",i* 2)), errors.New(fmt.Sprintf("%d",i * 3))},
+				  {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))},
 				{{ end }}
 				{{ if  eq (sel "Type") "[]string" }}
-				  {{sel "Type"}}{fmt.Sprintf("%d", i)},
+				  {{sel "Type"}}{fmt.Sprintf("%q","monday")},
 				{{ end }}
 				1*time.Millisecond,
 			)
@@ -2292,16 +4559,48 @@ func Test{{sel "Name"}}Distributor(t *testing.T) {
 	tests.Passed("Should not have received any items after publisher is stopped")
 }
 
-func is{{sel "Name"}}EqualSlice(item1 {{sel "Type"}}, item2 {{sel "Type"}}) bool {
-	if len(item1) != len(item2) {
-		return false
-	}
+{{ if hasPrefix (sel "Type") "[]map" }}
+func isMapEqualFor{{sel "Name"}}(item1 , item2 {{ trimPrefix (sel "Type") "[]" }}) bool {
+			if item1 == nil {
+				return false
+			}
 
-	for index, item := range item1 {
-		if item2[index] != item {
+			for index, item := range item1 {
+				if item2[index] != item {
+					return false
+				}
+			}
+
+	return true
+}
+{{end}}
+
+func is{{sel "Name"}}EqualSlice(item1 {{sel "Type"}}, item2 {{sel "Type"}}) bool {
+	{{ if hasPrefix (sel "Type") "[]map" }}
+		if len(item1) != len(item2) {
 			return false
 		}
-	}
+
+		for index, item := range item1 {
+			citem := item2[index]
+			if !isMapEqualFor{{sel "Name"}}(item, citem) {
+				return false
+			}
+		}
+
+	{{else}}
+		if len(item1) != len(item2) {
+			return false
+		}
+
+		for index, item := range item1 {
+			if item2[index] != item {
+				return false
+			}
+		}
+	{{end}}
+
+
 
 	return true
 }

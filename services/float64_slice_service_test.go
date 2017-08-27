@@ -22,6 +22,7 @@ func TestFloat64SliceCollect(t *testing.T) {
 		incoming := make(chan []float64, 0)
 		outgoing := services.Float64SliceCollect(ctx, 10*time.Millisecond, incoming)
 
+		// Awat
 		go func() {
 			defer close(incoming)
 
@@ -297,7 +298,7 @@ func TestFloat64SliceFilter(t *testing.T) {
 		go func() {
 			defer close(incoming)
 
-			for i := 1; i > 0; i-- {
+			for i := 0; i > 0; i-- {
 
 				incoming <- []float64{1.0, 2.0, 3.0}
 
@@ -818,6 +819,7 @@ func TestFloat64SliceDistributor(t *testing.T) {
 }
 
 func isFloat64SliceEqualSlice(item1 []float64, item2 []float64) bool {
+
 	if len(item1) != len(item2) {
 		return false
 	}

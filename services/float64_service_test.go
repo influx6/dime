@@ -817,7 +817,8 @@ func TestFloat64Distributor(t *testing.T) {
 	tests.Passed("Should not have received any items after publisher is stopped")
 }
 
-func isFloat64Equal(item1 float64, item2 float64) bool {
+func isFloat64Equal(item1, item2 float64) bool {
+
 	if item1 != item2 {
 		return false
 	}
