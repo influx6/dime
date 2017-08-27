@@ -44,48 +44,21 @@ _Dime contains auto-generated code for all go's base types supported for usage o
 
 ```go
 type MonoBoolService interface {
-	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
 	ReadErrors() <-chan error
-
-	// Read will return a channel which will allow reading from the Service until it it is closed.
 	Read() (<-chan bool, error)
-
-	// Receive will take the channel, which will be writing into the Service for it's internal processing
-	// and the Service will continue to read form the channel till the channel is closed.
-	// Useful for collating/collecting services.
 	Write(<-chan bool) error
-
-	// Done defines a signal to other pending services to know whether the Service is still servicing
-	// request.
 	Done() chan struct{}
-
-	// Service defines a function to be called to stop the Service internal operation and to close
-	// all read/write operations.
 	Stop() error
 }
 ```
 
 ```go
 type BoolService interface {
-	// ReadErrors will return a channel which will allow reading errors from the Service until it it is closed.
 	ReadErrors() <-chan error
-
-	// Read will return a channel which will allow reading from the Service until it it is closed.
 	Read(string) (<-chan bool, error)
-
-	// Receive will take the channel, which will be writing into the Service for it's internal processing
-	// and the Service will continue to read form the channel till the channel is closed.
-	// Useful for collating/collecting services.
 	Write(string, <-chan bool) error
-
-	// Done defines a signal to other pending services to know whether the Service is still servicing
-	// request.
 	Done() chan struct{}
-
-	// Service defines a function to be called to stop the Service internal operation and to close
-	// all read/write operations.
 	Stop() error
 }
-
 ```
 
