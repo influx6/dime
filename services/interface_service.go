@@ -1,6 +1,3 @@
-//
-//
-//
 package services
 
 import (
@@ -11,15 +8,15 @@ import (
 //go:generate moz generate-file -fromFile ./interface_service.go -toDir ./impl/interface
 
 // InterfaceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of interface{}.
-type InterfaceFromByteAdapterWithContext func(CancelContext, chan []byte) chan interface{}
+type InterfaceFromByteAdapter func(CancelContext, <-chan []byte) <-chan interface{}
 
 // InterfaceToByteAdapter defines a function that that will take a channel of bytes and return a channel of interface{}.
-type InterfaceToByteAdapter func(CancelContext, chan interface{}) chan []byte
+type InterfaceToByteAdapter func(CancelContext, <-chan interface{}) <-chan []byte
 
 // InterfacePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func InterfacePartialCollect(ctx CancelContext, waitTime time.Duration, in chan interface{}) chan []interface{} {
+func InterfacePartialCollect(ctx CancelContext, waitTime time.Duration, in <-chan interface{}) <-chan []interface{} {
 	res := make(chan []interface{}, 0)
 
 	go func() {
@@ -57,7 +54,7 @@ func InterfacePartialCollect(ctx CancelContext, waitTime time.Duration, in chan 
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func InterfaceCollect(ctx CancelContext, waitTime time.Duration, in chan interface{}) chan []interface{} {
+func InterfaceCollect(ctx CancelContext, waitTime time.Duration, in <-chan interface{}) <-chan []interface{} {
 	res := make(chan []interface{}, 0)
 
 	go func() {
@@ -94,7 +91,7 @@ func InterfaceCollect(ctx CancelContext, waitTime time.Duration, in chan interfa
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func InterfaceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(interface{}) interface{}, in chan interface{}) chan interface{} {
+func InterfaceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(interface{}) interface{}, in <-chan interface{}) <-chan interface{} {
 	res := make(chan interface{}, 0)
 
 	go func() {
@@ -123,11 +120,48 @@ func InterfaceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(in
 	return res
 }
 
+// InterfaceView defines a function which returns a channel where the items of the incoming channel
+// are provided to function after delivry to output channel, till the provided channel is closed.
+// This guarantees that whatever the function sees is something which has being delivered to the output
+// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the returning channel is closed as well.
+// This function guarantees complete data.
+func InterfaceView(ctx CancelContext, waitTime time.Duration, viewFn func(interface{}), in <-chan interface{}) <-chan interface{} {
+	res := make(chan interface{}, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(res)
+				return
+
+			case data, ok := <-in:
+				if !ok {
+					close(res)
+					return
+				}
+
+				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
 // InterfaceFilter defines a function which returns a channel where the items of the incoming channel
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func InterfaceFilter(ctx CancelContext, waitTime time.Duration, filterFn func(interface{}) bool, in chan interface{}) chan interface{} {
+func InterfaceFilter(ctx CancelContext, waitTime time.Duration, filterFn func(interface{}) bool, in <-chan interface{}) <-chan interface{} {
 	res := make(chan interface{}, 0)
 
 	go func() {
@@ -166,7 +200,7 @@ func InterfaceFilter(ctx CancelContext, waitTime time.Duration, filterFn func(in
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func InterfaceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]interface{}) bool, in chan interface{}) chan []interface{} {
+func InterfaceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]interface{}) bool, in <-chan interface{}) <-chan []interface{} {
 	res := make(chan []interface{}, 0)
 
 	go func() {
@@ -221,7 +255,7 @@ func InterfaceCollectUntil(ctx CancelContext, waitTime time.Duration, condition 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func InterfaceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan interface{}) chan []interface{} {
+func InterfaceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan interface{}) <-chan []interface{} {
 	res := make(chan []interface{}, 0)
 
 	for _, elem := range senders {
@@ -316,7 +350,7 @@ func InterfaceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, se
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func InterfaceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan interface{}) chan []interface{} {
+func InterfaceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan interface{}) <-chan []interface{} {
 	res := make(chan []interface{}, 0)
 
 	for _, elem := range senders {
@@ -412,7 +446,7 @@ func InterfaceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func InterfaceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan interface{}) chan []interface{} {
+func InterfaceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan interface{}) <-chan []interface{} {
 	res := make(chan []interface{}, 0)
 
 	for _, elem := range senders {
@@ -514,7 +548,7 @@ func InterfaceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.D
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func InterfaceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan interface{}) chan []interface{} {
+func InterfaceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan interface{}) <-chan []interface{} {
 	res := make(chan []interface{}, 0)
 
 	for _, elem := range senders {
@@ -605,7 +639,7 @@ func InterfaceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func InterfaceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan interface{}) chan []interface{} {
+func InterfaceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan interface{}) <-chan []interface{} {
 	res := make(chan []interface{}, 0)
 
 	for _, elem := range senders {
@@ -708,7 +742,7 @@ func InterfaceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func InterfaceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan interface{}) chan []interface{} {
+func InterfaceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan interface{}) <-chan []interface{} {
 	res := make(chan []interface{}, 0)
 
 	for _, elem := range senders {
@@ -800,8 +834,8 @@ type InterfaceDistributor struct {
 	sendWaitBeforeAbort time.Duration
 }
 
-// NewInterfaceDisributor returns a new instance of a InterfaceDistributor.
-func NewInterfaceDisributor(buffer int, sendWaitBeforeAbort time.Duration) *InterfaceDistributor {
+// NewInterfaceDistributor returns a new instance of a InterfaceDistributor.
+func NewInterfaceDistributor(buffer int, sendWaitBeforeAbort time.Duration) *InterfaceDistributor {
 	if sendWaitBeforeAbort <= 0 {
 		sendWaitBeforeAbort = defaultSendWithBeforeAbort
 	}
@@ -946,7 +980,7 @@ type MonoInterfaceService interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.
@@ -972,7 +1006,7 @@ type InterfaceService interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.

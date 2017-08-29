@@ -1,6 +1,3 @@
-//
-//
-//
 package services_test
 
 import (
@@ -265,6 +262,68 @@ func TestBoolSliceMutate(t *testing.T) {
 			tests.Failed("Should have recieved close signal")
 		}
 		tests.Passed("Should have recieved close signal")
+	}
+}
+
+func TestBoolSliceView(t *testing.T) {
+	t.Logf("When data is View but not received due to context expiration on receive")
+	{
+
+		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
+		defer cancl()
+
+		incoming := make(chan []bool, 0)
+		defer close(incoming)
+
+		outgoing := services.BoolSliceView(ctx, 2*time.Millisecond, func(item []bool) {}, incoming)
+
+		_, ok := <-outgoing
+		if ok {
+			tests.Failed("Should have recieved close signal due to context expiration")
+		}
+		tests.Passed("Should have recieved close signal due to context expiration")
+	}
+
+	t.Logf("When data is filtered on each receive")
+	{
+
+		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		defer cancl()
+
+		incoming := make(chan []bool, 0)
+		inview := make(chan []bool, 0)
+
+		outgoing := services.BoolSliceView(ctx, 10*time.Millisecond, func(item []bool) {
+			inview <- item
+		}, incoming)
+
+		go func() {
+			defer close(incoming)
+
+			for i := 1; i > 0; i-- {
+
+				incoming <- []bool{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+
+			}
+		}()
+
+		_, ok := <-outgoing
+		if !ok {
+			tests.Failed("Should have recieved only 1 item as value but got %t", ok)
+		}
+		tests.Passed("Should have recieved 1 item")
+
+		_, ok = <-inview
+		if !ok {
+			tests.Failed("Should have recieved only 1 item as value but got %t", ok)
+		}
+		tests.Passed("Should have recieved 1 item")
+
+		_, ok = <-outgoing
+		if ok {
+			tests.Failed("Should have recieved close signal")
+		}
+		tests.Passed("Should have recieved 1 item")
 	}
 }
 
@@ -774,7 +833,7 @@ func TestBoolSliceCombineInPartialOrder(t *testing.T) {
 }
 
 func TestBoolSliceDistributor(t *testing.T) {
-	dist := services.NewBoolSliceDisributor(0, 1*time.Second)
+	dist := services.NewBoolSliceDistributor(0, 1*time.Second)
 	dist.Start()
 
 	incoming := make(chan []bool, 1)

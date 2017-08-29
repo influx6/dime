@@ -1,6 +1,3 @@
-//
-//
-//
 package services
 
 import (
@@ -11,15 +8,15 @@ import (
 //go:generate moz generate-file -fromFile ./map_of_any_slice_service.go -toDir ./impl/mapofanyslice
 
 // MapOfAnySliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of []map[interface{}]interface{}.
-type MapOfAnySliceFromByteAdapterWithContext func(CancelContext, chan []byte) chan []map[interface{}]interface{}
+type MapOfAnySliceFromByteAdapter func(CancelContext, <-chan []byte) <-chan []map[interface{}]interface{}
 
 // MapOfAnySliceToByteAdapter defines a function that that will take a channel of bytes and return a channel of []map[interface{}]interface{}.
-type MapOfAnySliceToByteAdapter func(CancelContext, chan []map[interface{}]interface{}) chan []byte
+type MapOfAnySliceToByteAdapter func(CancelContext, <-chan []map[interface{}]interface{}) <-chan []byte
 
 // MapOfAnySlicePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func MapOfAnySlicePartialCollect(ctx CancelContext, waitTime time.Duration, in chan []map[interface{}]interface{}) chan [][]map[interface{}]interface{} {
+func MapOfAnySlicePartialCollect(ctx CancelContext, waitTime time.Duration, in <-chan []map[interface{}]interface{}) <-chan [][]map[interface{}]interface{} {
 	res := make(chan [][]map[interface{}]interface{}, 0)
 
 	go func() {
@@ -57,7 +54,7 @@ func MapOfAnySlicePartialCollect(ctx CancelContext, waitTime time.Duration, in c
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func MapOfAnySliceCollect(ctx CancelContext, waitTime time.Duration, in chan []map[interface{}]interface{}) chan [][]map[interface{}]interface{} {
+func MapOfAnySliceCollect(ctx CancelContext, waitTime time.Duration, in <-chan []map[interface{}]interface{}) <-chan [][]map[interface{}]interface{} {
 	res := make(chan [][]map[interface{}]interface{}, 0)
 
 	go func() {
@@ -94,7 +91,7 @@ func MapOfAnySliceCollect(ctx CancelContext, waitTime time.Duration, in chan []m
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func MapOfAnySliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]map[interface{}]interface{}) []map[interface{}]interface{}, in chan []map[interface{}]interface{}) chan []map[interface{}]interface{} {
+func MapOfAnySliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]map[interface{}]interface{}) []map[interface{}]interface{}, in <-chan []map[interface{}]interface{}) <-chan []map[interface{}]interface{} {
 	res := make(chan []map[interface{}]interface{}, 0)
 
 	go func() {
@@ -123,11 +120,48 @@ func MapOfAnySliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn fun
 	return res
 }
 
+// MapOfAnySliceView defines a function which returns a channel where the items of the incoming channel
+// are provided to function after delivry to output channel, till the provided channel is closed.
+// This guarantees that whatever the function sees is something which has being delivered to the output
+// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the returning channel is closed as well.
+// This function guarantees complete data.
+func MapOfAnySliceView(ctx CancelContext, waitTime time.Duration, viewFn func([]map[interface{}]interface{}), in <-chan []map[interface{}]interface{}) <-chan []map[interface{}]interface{} {
+	res := make(chan []map[interface{}]interface{}, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(res)
+				return
+
+			case data, ok := <-in:
+				if !ok {
+					close(res)
+					return
+				}
+
+				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
 // MapOfAnySliceFilter defines a function which returns a channel where the items of the incoming channel
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func MapOfAnySliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]map[interface{}]interface{}) bool, in chan []map[interface{}]interface{}) chan []map[interface{}]interface{} {
+func MapOfAnySliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]map[interface{}]interface{}) bool, in <-chan []map[interface{}]interface{}) <-chan []map[interface{}]interface{} {
 	res := make(chan []map[interface{}]interface{}, 0)
 
 	go func() {
@@ -166,7 +200,7 @@ func MapOfAnySliceFilter(ctx CancelContext, waitTime time.Duration, filterFn fun
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func MapOfAnySliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]map[interface{}]interface{}) bool, in chan []map[interface{}]interface{}) chan [][]map[interface{}]interface{} {
+func MapOfAnySliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]map[interface{}]interface{}) bool, in <-chan []map[interface{}]interface{}) <-chan [][]map[interface{}]interface{} {
 	res := make(chan [][]map[interface{}]interface{}, 0)
 
 	go func() {
@@ -221,7 +255,7 @@ func MapOfAnySliceCollectUntil(ctx CancelContext, waitTime time.Duration, condit
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapOfAnySliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []map[interface{}]interface{}) chan []map[interface{}]interface{} {
+func MapOfAnySliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan []map[interface{}]interface{}) <-chan []map[interface{}]interface{} {
 	res := make(chan []map[interface{}]interface{}, 0)
 
 	for _, elem := range senders {
@@ -316,7 +350,7 @@ func MapOfAnySliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapOfAnySliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []map[interface{}]interface{}) chan []map[interface{}]interface{} {
+func MapOfAnySliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan []map[interface{}]interface{}) <-chan []map[interface{}]interface{} {
 	res := make(chan []map[interface{}]interface{}, 0)
 
 	for _, elem := range senders {
@@ -412,7 +446,7 @@ func MapOfAnySliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, sen
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapOfAnySliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []map[interface{}]interface{}) chan [][]map[interface{}]interface{} {
+func MapOfAnySliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan []map[interface{}]interface{}) <-chan [][]map[interface{}]interface{} {
 	res := make(chan [][]map[interface{}]interface{}, 0)
 
 	for _, elem := range senders {
@@ -514,7 +548,7 @@ func MapOfAnySliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait ti
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapOfAnySliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []map[interface{}]interface{}) chan [][]map[interface{}]interface{} {
+func MapOfAnySliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan []map[interface{}]interface{}) <-chan [][]map[interface{}]interface{} {
 	res := make(chan [][]map[interface{}]interface{}, 0)
 
 	for _, elem := range senders {
@@ -605,7 +639,7 @@ func MapOfAnySliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Durati
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapOfAnySliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []map[interface{}]interface{}) chan [][]map[interface{}]interface{} {
+func MapOfAnySliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan []map[interface{}]interface{}) <-chan [][]map[interface{}]interface{} {
 	res := make(chan [][]map[interface{}]interface{}, 0)
 
 	for _, elem := range senders {
@@ -708,7 +742,7 @@ func MapOfAnySliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Dura
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func MapOfAnySliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []map[interface{}]interface{}) chan [][]map[interface{}]interface{} {
+func MapOfAnySliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan []map[interface{}]interface{}) <-chan [][]map[interface{}]interface{} {
 	res := make(chan [][]map[interface{}]interface{}, 0)
 
 	for _, elem := range senders {
@@ -800,8 +834,8 @@ type MapOfAnySliceDistributor struct {
 	sendWaitBeforeAbort time.Duration
 }
 
-// NewMapOfAnySliceDisributor returns a new instance of a MapOfAnySliceDistributor.
-func NewMapOfAnySliceDisributor(buffer int, sendWaitBeforeAbort time.Duration) *MapOfAnySliceDistributor {
+// NewMapOfAnySliceDistributor returns a new instance of a MapOfAnySliceDistributor.
+func NewMapOfAnySliceDistributor(buffer int, sendWaitBeforeAbort time.Duration) *MapOfAnySliceDistributor {
 	if sendWaitBeforeAbort <= 0 {
 		sendWaitBeforeAbort = defaultSendWithBeforeAbort
 	}
@@ -946,7 +980,7 @@ type MonoMapOfAnySliceService interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.
@@ -972,7 +1006,7 @@ type MapOfAnySliceService interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.

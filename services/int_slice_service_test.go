@@ -1,6 +1,3 @@
-//
-//
-//
 package services_test
 
 import (
@@ -273,6 +270,68 @@ func TestIntSliceMutate(t *testing.T) {
 			tests.Failed("Should have recieved close signal")
 		}
 		tests.Passed("Should have recieved close signal")
+	}
+}
+
+func TestIntSliceView(t *testing.T) {
+	t.Logf("When data is View but not received due to context expiration on receive")
+	{
+
+		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
+		defer cancl()
+
+		incoming := make(chan []int, 0)
+		defer close(incoming)
+
+		outgoing := services.IntSliceView(ctx, 2*time.Millisecond, func(item []int) {}, incoming)
+
+		_, ok := <-outgoing
+		if ok {
+			tests.Failed("Should have recieved close signal due to context expiration")
+		}
+		tests.Passed("Should have recieved close signal due to context expiration")
+	}
+
+	t.Logf("When data is filtered on each receive")
+	{
+
+		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		defer cancl()
+
+		incoming := make(chan []int, 0)
+		inview := make(chan []int, 0)
+
+		outgoing := services.IntSliceView(ctx, 10*time.Millisecond, func(item []int) {
+			inview <- item
+		}, incoming)
+
+		go func() {
+			defer close(incoming)
+
+			for i := 1; i > 0; i-- {
+
+				incoming <- []int{1, 2, 3}
+
+			}
+		}()
+
+		_, ok := <-outgoing
+		if !ok {
+			tests.Failed("Should have recieved only 1 item as value but got %t", ok)
+		}
+		tests.Passed("Should have recieved 1 item")
+
+		_, ok = <-inview
+		if !ok {
+			tests.Failed("Should have recieved only 1 item as value but got %t", ok)
+		}
+		tests.Passed("Should have recieved 1 item")
+
+		_, ok = <-outgoing
+		if ok {
+			tests.Failed("Should have recieved close signal")
+		}
+		tests.Passed("Should have recieved 1 item")
 	}
 }
 
@@ -782,7 +841,7 @@ func TestIntSliceCombineInPartialOrder(t *testing.T) {
 }
 
 func TestIntSliceDistributor(t *testing.T) {
-	dist := services.NewIntSliceDisributor(0, 1*time.Second)
+	dist := services.NewIntSliceDistributor(0, 1*time.Second)
 	dist.Start()
 
 	incoming := make(chan []int, 1)

@@ -1,6 +1,3 @@
-//
-//
-//
 package services
 
 import "time"

@@ -1,6 +1,3 @@
-//
-//
-//
 package services
 
 import (
@@ -11,15 +8,15 @@ import (
 //go:generate moz generate-file -fromFile ./string_service.go -toDir ./impl/string
 
 // StringFromByteAdapter defines a function that that will take a channel of bytes and return a channel of string.
-type StringFromByteAdapterWithContext func(CancelContext, chan []byte) chan string
+type StringFromByteAdapter func(CancelContext, <-chan []byte) <-chan string
 
 // StringToByteAdapter defines a function that that will take a channel of bytes and return a channel of string.
-type StringToByteAdapter func(CancelContext, chan string) chan []byte
+type StringToByteAdapter func(CancelContext, <-chan string) <-chan []byte
 
 // StringPartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func StringPartialCollect(ctx CancelContext, waitTime time.Duration, in chan string) chan []string {
+func StringPartialCollect(ctx CancelContext, waitTime time.Duration, in <-chan string) <-chan []string {
 	res := make(chan []string, 0)
 
 	go func() {
@@ -57,7 +54,7 @@ func StringPartialCollect(ctx CancelContext, waitTime time.Duration, in chan str
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func StringCollect(ctx CancelContext, waitTime time.Duration, in chan string) chan []string {
+func StringCollect(ctx CancelContext, waitTime time.Duration, in <-chan string) <-chan []string {
 	res := make(chan []string, 0)
 
 	go func() {
@@ -94,7 +91,7 @@ func StringCollect(ctx CancelContext, waitTime time.Duration, in chan string) ch
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func StringMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(string) string, in chan string) chan string {
+func StringMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(string) string, in <-chan string) <-chan string {
 	res := make(chan string, 0)
 
 	go func() {
@@ -123,11 +120,48 @@ func StringMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(strin
 	return res
 }
 
+// StringView defines a function which returns a channel where the items of the incoming channel
+// are provided to function after delivry to output channel, till the provided channel is closed.
+// This guarantees that whatever the function sees is something which has being delivered to the output
+// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the returning channel is closed as well.
+// This function guarantees complete data.
+func StringView(ctx CancelContext, waitTime time.Duration, viewFn func(string), in <-chan string) <-chan string {
+	res := make(chan string, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(res)
+				return
+
+			case data, ok := <-in:
+				if !ok {
+					close(res)
+					return
+				}
+
+				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
 // StringFilter defines a function which returns a channel where the items of the incoming channel
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func StringFilter(ctx CancelContext, waitTime time.Duration, filterFn func(string) bool, in chan string) chan string {
+func StringFilter(ctx CancelContext, waitTime time.Duration, filterFn func(string) bool, in <-chan string) <-chan string {
 	res := make(chan string, 0)
 
 	go func() {
@@ -166,7 +200,7 @@ func StringFilter(ctx CancelContext, waitTime time.Duration, filterFn func(strin
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func StringCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]string) bool, in chan string) chan []string {
+func StringCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]string) bool, in <-chan string) <-chan []string {
 	res := make(chan []string, 0)
 
 	go func() {
@@ -221,7 +255,7 @@ func StringCollectUntil(ctx CancelContext, waitTime time.Duration, condition fun
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan string) chan []string {
+func StringMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan string) <-chan []string {
 	res := make(chan []string, 0)
 
 	for _, elem := range senders {
@@ -316,7 +350,7 @@ func StringMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, sende
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan string) chan []string {
+func StringMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan string) <-chan []string {
 	res := make(chan []string, 0)
 
 	for _, elem := range senders {
@@ -412,7 +446,7 @@ func StringMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ..
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan string) chan []string {
+func StringCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan string) <-chan []string {
 	res := make(chan []string, 0)
 
 	for _, elem := range senders {
@@ -514,7 +548,7 @@ func StringCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Dura
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan string) chan []string {
+func StringCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan string) <-chan []string {
 	res := make(chan []string, 0)
 
 	for _, elem := range senders {
@@ -605,7 +639,7 @@ func StringCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, sen
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan string) chan []string {
+func StringCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan string) <-chan []string {
 	res := make(chan []string, 0)
 
 	for _, elem := range senders {
@@ -708,7 +742,7 @@ func StringCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, s
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func StringCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan string) chan []string {
+func StringCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan string) <-chan []string {
 	res := make(chan []string, 0)
 
 	for _, elem := range senders {
@@ -800,8 +834,8 @@ type StringDistributor struct {
 	sendWaitBeforeAbort time.Duration
 }
 
-// NewStringDisributor returns a new instance of a StringDistributor.
-func NewStringDisributor(buffer int, sendWaitBeforeAbort time.Duration) *StringDistributor {
+// NewStringDistributor returns a new instance of a StringDistributor.
+func NewStringDistributor(buffer int, sendWaitBeforeAbort time.Duration) *StringDistributor {
 	if sendWaitBeforeAbort <= 0 {
 		sendWaitBeforeAbort = defaultSendWithBeforeAbort
 	}
@@ -946,7 +980,7 @@ type MonoStringService interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.
@@ -972,7 +1006,7 @@ type StringService interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.

@@ -1,6 +1,3 @@
-//
-//
-//
 package services
 
 import (
@@ -13,7 +10,7 @@ import (
 // BytePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func BytePartialCollect(ctx CancelContext, waitTime time.Duration, in chan byte) chan []byte {
+func BytePartialCollect(ctx CancelContext, waitTime time.Duration, in <-chan byte) <-chan []byte {
 	res := make(chan []byte, 0)
 
 	go func() {
@@ -51,7 +48,7 @@ func BytePartialCollect(ctx CancelContext, waitTime time.Duration, in chan byte)
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func ByteCollect(ctx CancelContext, waitTime time.Duration, in chan byte) chan []byte {
+func ByteCollect(ctx CancelContext, waitTime time.Duration, in <-chan byte) <-chan []byte {
 	res := make(chan []byte, 0)
 
 	go func() {
@@ -88,7 +85,7 @@ func ByteCollect(ctx CancelContext, waitTime time.Duration, in chan byte) chan [
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func ByteMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(byte) byte, in chan byte) chan byte {
+func ByteMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(byte) byte, in <-chan byte) <-chan byte {
 	res := make(chan byte, 0)
 
 	go func() {
@@ -117,11 +114,48 @@ func ByteMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(byte) b
 	return res
 }
 
+// ByteView defines a function which returns a channel where the items of the incoming channel
+// are provided to function after delivry to output channel, till the provided channel is closed.
+// This guarantees that whatever the function sees is something which has being delivered to the output
+// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the returning channel is closed as well.
+// This function guarantees complete data.
+func ByteView(ctx CancelContext, waitTime time.Duration, viewFn func(byte), in <-chan byte) <-chan byte {
+	res := make(chan byte, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(res)
+				return
+
+			case data, ok := <-in:
+				if !ok {
+					close(res)
+					return
+				}
+
+				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
 // ByteFilter defines a function which returns a channel where the items of the incoming channel
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func ByteFilter(ctx CancelContext, waitTime time.Duration, filterFn func(byte) bool, in chan byte) chan byte {
+func ByteFilter(ctx CancelContext, waitTime time.Duration, filterFn func(byte) bool, in <-chan byte) <-chan byte {
 	res := make(chan byte, 0)
 
 	go func() {
@@ -160,7 +194,7 @@ func ByteFilter(ctx CancelContext, waitTime time.Duration, filterFn func(byte) b
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func ByteCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]byte) bool, in chan byte) chan []byte {
+func ByteCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]byte) bool, in <-chan byte) <-chan []byte {
 	res := make(chan []byte, 0)
 
 	go func() {
@@ -215,7 +249,7 @@ func ByteCollectUntil(ctx CancelContext, waitTime time.Duration, condition func(
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ByteMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan byte) chan []byte {
+func ByteMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan byte) <-chan []byte {
 	res := make(chan []byte, 0)
 
 	for _, elem := range senders {
@@ -310,7 +344,7 @@ func ByteMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ByteMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan byte) chan []byte {
+func ByteMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan byte) <-chan []byte {
 	res := make(chan []byte, 0)
 
 	for _, elem := range senders {
@@ -406,7 +440,7 @@ func ByteMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...c
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ByteCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan byte) chan []byte {
+func ByteCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan byte) <-chan []byte {
 	res := make(chan []byte, 0)
 
 	for _, elem := range senders {
@@ -508,7 +542,7 @@ func ByteCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Durati
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ByteCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan byte) chan []byte {
+func ByteCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan byte) <-chan []byte {
 	res := make(chan []byte, 0)
 
 	for _, elem := range senders {
@@ -599,7 +633,7 @@ func ByteCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, sende
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ByteCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan byte) chan []byte {
+func ByteCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan byte) <-chan []byte {
 	res := make(chan []byte, 0)
 
 	for _, elem := range senders {
@@ -702,7 +736,7 @@ func ByteCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, sen
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ByteCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan byte) chan []byte {
+func ByteCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan byte) <-chan []byte {
 	res := make(chan []byte, 0)
 
 	for _, elem := range senders {
@@ -794,8 +828,8 @@ type ByteDistributor struct {
 	sendWaitBeforeAbort time.Duration
 }
 
-// NewByteDisributor returns a new instance of a ByteDistributor.
-func NewByteDisributor(buffer int, sendWaitBeforeAbort time.Duration) *ByteDistributor {
+// NewByteDistributor returns a new instance of a ByteDistributor.
+func NewByteDistributor(buffer int, sendWaitBeforeAbort time.Duration) *ByteDistributor {
 	if sendWaitBeforeAbort <= 0 {
 		sendWaitBeforeAbort = defaultSendWithBeforeAbort
 	}
@@ -940,7 +974,7 @@ type MonoByteService interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.
@@ -966,7 +1000,7 @@ type ByteService interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.

@@ -22,8 +22,8 @@ type ReadStdoutService struct {
 
 // NewReadStdoutService returns a new instance of a StdOutService.
 func NewReadStdoutService(buffer int, maxWaitingTime time.Duration) *ReadStdoutService {
-	pub := services.NewBytesDisributor(buffer, maxWaitingTime)
-	pubErr := services.NewErrorDisributor(buffer, maxWaitingTime)
+	pub := services.NewBytesDistributor(buffer, maxWaitingTime)
+	pubErr := services.NewErrorDistributor(buffer, maxWaitingTime)
 
 	defer pubErr.Start()
 	defer pub.Start()

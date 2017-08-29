@@ -20,7 +20,7 @@ type WriteStdInService struct {
 
 // NewWriteStdInService returns a new instance of a StdOutService.
 func NewWriteStdInService(buffer int, maxWaitingTime time.Duration) *WriteStdInService {
-	pubErr := services.NewErrorDisributor(buffer, maxWaitingTime)
+	pubErr := services.NewErrorDistributor(buffer, maxWaitingTime)
 
 	defer pubErr.Start()
 

@@ -1,6 +1,3 @@
-//
-//
-//
 package services
 
 import (
@@ -11,15 +8,15 @@ import (
 //go:generate moz generate-file -fromFile ./int_service.go -toDir ./impl/int
 
 // IntFromByteAdapter defines a function that that will take a channel of bytes and return a channel of int.
-type IntFromByteAdapterWithContext func(CancelContext, chan []byte) chan int
+type IntFromByteAdapter func(CancelContext, <-chan []byte) <-chan int
 
 // IntToByteAdapter defines a function that that will take a channel of bytes and return a channel of int.
-type IntToByteAdapter func(CancelContext, chan int) chan []byte
+type IntToByteAdapter func(CancelContext, <-chan int) <-chan []byte
 
 // IntPartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func IntPartialCollect(ctx CancelContext, waitTime time.Duration, in chan int) chan []int {
+func IntPartialCollect(ctx CancelContext, waitTime time.Duration, in <-chan int) <-chan []int {
 	res := make(chan []int, 0)
 
 	go func() {
@@ -57,7 +54,7 @@ func IntPartialCollect(ctx CancelContext, waitTime time.Duration, in chan int) c
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func IntCollect(ctx CancelContext, waitTime time.Duration, in chan int) chan []int {
+func IntCollect(ctx CancelContext, waitTime time.Duration, in <-chan int) <-chan []int {
 	res := make(chan []int, 0)
 
 	go func() {
@@ -94,7 +91,7 @@ func IntCollect(ctx CancelContext, waitTime time.Duration, in chan int) chan []i
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func IntMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(int) int, in chan int) chan int {
+func IntMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(int) int, in <-chan int) <-chan int {
 	res := make(chan int, 0)
 
 	go func() {
@@ -123,11 +120,48 @@ func IntMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(int) int
 	return res
 }
 
+// IntView defines a function which returns a channel where the items of the incoming channel
+// are provided to function after delivry to output channel, till the provided channel is closed.
+// This guarantees that whatever the function sees is something which has being delivered to the output
+// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the returning channel is closed as well.
+// This function guarantees complete data.
+func IntView(ctx CancelContext, waitTime time.Duration, viewFn func(int), in <-chan int) <-chan int {
+	res := make(chan int, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(res)
+				return
+
+			case data, ok := <-in:
+				if !ok {
+					close(res)
+					return
+				}
+
+				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
 // IntFilter defines a function which returns a channel where the items of the incoming channel
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func IntFilter(ctx CancelContext, waitTime time.Duration, filterFn func(int) bool, in chan int) chan int {
+func IntFilter(ctx CancelContext, waitTime time.Duration, filterFn func(int) bool, in <-chan int) <-chan int {
 	res := make(chan int, 0)
 
 	go func() {
@@ -166,7 +200,7 @@ func IntFilter(ctx CancelContext, waitTime time.Duration, filterFn func(int) boo
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func IntCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]int) bool, in chan int) chan []int {
+func IntCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]int) bool, in <-chan int) <-chan []int {
 	res := make(chan []int, 0)
 
 	go func() {
@@ -221,7 +255,7 @@ func IntCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan int) chan []int {
+func IntMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan int) <-chan []int {
 	res := make(chan []int, 0)
 
 	for _, elem := range senders {
@@ -316,7 +350,7 @@ func IntMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan int) chan []int {
+func IntMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan int) <-chan []int {
 	res := make(chan []int, 0)
 
 	for _, elem := range senders {
@@ -412,7 +446,7 @@ func IntMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...ch
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan int) chan []int {
+func IntCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan int) <-chan []int {
 	res := make(chan []int, 0)
 
 	for _, elem := range senders {
@@ -514,7 +548,7 @@ func IntCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duratio
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan int) chan []int {
+func IntCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan int) <-chan []int {
 	res := make(chan []int, 0)
 
 	for _, elem := range senders {
@@ -605,7 +639,7 @@ func IntCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, sender
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan int) chan []int {
+func IntCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan int) <-chan []int {
 	res := make(chan []int, 0)
 
 	for _, elem := range senders {
@@ -708,7 +742,7 @@ func IntCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, send
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func IntCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan int) chan []int {
+func IntCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan int) <-chan []int {
 	res := make(chan []int, 0)
 
 	for _, elem := range senders {
@@ -800,8 +834,8 @@ type IntDistributor struct {
 	sendWaitBeforeAbort time.Duration
 }
 
-// NewIntDisributor returns a new instance of a IntDistributor.
-func NewIntDisributor(buffer int, sendWaitBeforeAbort time.Duration) *IntDistributor {
+// NewIntDistributor returns a new instance of a IntDistributor.
+func NewIntDistributor(buffer int, sendWaitBeforeAbort time.Duration) *IntDistributor {
 	if sendWaitBeforeAbort <= 0 {
 		sendWaitBeforeAbort = defaultSendWithBeforeAbort
 	}
@@ -946,7 +980,7 @@ type MonoIntService interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.
@@ -972,7 +1006,7 @@ type IntService interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.

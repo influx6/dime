@@ -1,6 +1,3 @@
-//
-//
-//
 package services
 
 import (
@@ -11,15 +8,15 @@ import (
 //go:generate moz generate-file -fromFile ./uint_slice_service.go -toDir ./impl/uintslice
 
 // UIntSliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of []uint.
-type UIntSliceFromByteAdapterWithContext func(CancelContext, chan []byte) chan []uint
+type UIntSliceFromByteAdapter func(CancelContext, <-chan []byte) <-chan []uint
 
 // UIntSliceToByteAdapter defines a function that that will take a channel of bytes and return a channel of []uint.
-type UIntSliceToByteAdapter func(CancelContext, chan []uint) chan []byte
+type UIntSliceToByteAdapter func(CancelContext, <-chan []uint) <-chan []byte
 
 // UIntSlicePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func UIntSlicePartialCollect(ctx CancelContext, waitTime time.Duration, in chan []uint) chan [][]uint {
+func UIntSlicePartialCollect(ctx CancelContext, waitTime time.Duration, in <-chan []uint) <-chan [][]uint {
 	res := make(chan [][]uint, 0)
 
 	go func() {
@@ -57,7 +54,7 @@ func UIntSlicePartialCollect(ctx CancelContext, waitTime time.Duration, in chan 
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func UIntSliceCollect(ctx CancelContext, waitTime time.Duration, in chan []uint) chan [][]uint {
+func UIntSliceCollect(ctx CancelContext, waitTime time.Duration, in <-chan []uint) <-chan [][]uint {
 	res := make(chan [][]uint, 0)
 
 	go func() {
@@ -94,7 +91,7 @@ func UIntSliceCollect(ctx CancelContext, waitTime time.Duration, in chan []uint)
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func UIntSliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]uint) []uint, in chan []uint) chan []uint {
+func UIntSliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]uint) []uint, in <-chan []uint) <-chan []uint {
 	res := make(chan []uint, 0)
 
 	go func() {
@@ -123,11 +120,48 @@ func UIntSliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]
 	return res
 }
 
+// UIntSliceView defines a function which returns a channel where the items of the incoming channel
+// are provided to function after delivry to output channel, till the provided channel is closed.
+// This guarantees that whatever the function sees is something which has being delivered to the output
+// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the returning channel is closed as well.
+// This function guarantees complete data.
+func UIntSliceView(ctx CancelContext, waitTime time.Duration, viewFn func([]uint), in <-chan []uint) <-chan []uint {
+	res := make(chan []uint, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(res)
+				return
+
+			case data, ok := <-in:
+				if !ok {
+					close(res)
+					return
+				}
+
+				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
 // UIntSliceFilter defines a function which returns a channel where the items of the incoming channel
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func UIntSliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]uint) bool, in chan []uint) chan []uint {
+func UIntSliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]uint) bool, in <-chan []uint) <-chan []uint {
 	res := make(chan []uint, 0)
 
 	go func() {
@@ -166,7 +200,7 @@ func UIntSliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func UIntSliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]uint) bool, in chan []uint) chan [][]uint {
+func UIntSliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]uint) bool, in <-chan []uint) <-chan [][]uint {
 	res := make(chan [][]uint, 0)
 
 	go func() {
@@ -221,7 +255,7 @@ func UIntSliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UIntSliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []uint) chan []uint {
+func UIntSliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan []uint) <-chan []uint {
 	res := make(chan []uint, 0)
 
 	for _, elem := range senders {
@@ -316,7 +350,7 @@ func UIntSliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, se
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UIntSliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []uint) chan []uint {
+func UIntSliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan []uint) <-chan []uint {
 	res := make(chan []uint, 0)
 
 	for _, elem := range senders {
@@ -412,7 +446,7 @@ func UIntSliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UIntSliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []uint) chan [][]uint {
+func UIntSliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan []uint) <-chan [][]uint {
 	res := make(chan [][]uint, 0)
 
 	for _, elem := range senders {
@@ -514,7 +548,7 @@ func UIntSliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.D
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UIntSliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []uint) chan [][]uint {
+func UIntSliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan []uint) <-chan [][]uint {
 	res := make(chan [][]uint, 0)
 
 	for _, elem := range senders {
@@ -605,7 +639,7 @@ func UIntSliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UIntSliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []uint) chan [][]uint {
+func UIntSliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan []uint) <-chan [][]uint {
 	res := make(chan [][]uint, 0)
 
 	for _, elem := range senders {
@@ -708,7 +742,7 @@ func UIntSliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UIntSliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []uint) chan [][]uint {
+func UIntSliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan []uint) <-chan [][]uint {
 	res := make(chan [][]uint, 0)
 
 	for _, elem := range senders {
@@ -800,8 +834,8 @@ type UIntSliceDistributor struct {
 	sendWaitBeforeAbort time.Duration
 }
 
-// NewUIntSliceDisributor returns a new instance of a UIntSliceDistributor.
-func NewUIntSliceDisributor(buffer int, sendWaitBeforeAbort time.Duration) *UIntSliceDistributor {
+// NewUIntSliceDistributor returns a new instance of a UIntSliceDistributor.
+func NewUIntSliceDistributor(buffer int, sendWaitBeforeAbort time.Duration) *UIntSliceDistributor {
 	if sendWaitBeforeAbort <= 0 {
 		sendWaitBeforeAbort = defaultSendWithBeforeAbort
 	}
@@ -946,7 +980,7 @@ type MonoUIntSliceService interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.
@@ -972,7 +1006,7 @@ type UIntSliceService interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.

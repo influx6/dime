@@ -1,6 +1,3 @@
-//
-//
-//
 package services
 
 import (
@@ -11,15 +8,15 @@ import (
 //go:generate moz generate-file -fromFile ./error_slice_service.go -toDir ./impl/errorslice
 
 // ErrorSliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of []error.
-type ErrorSliceFromByteAdapterWithContext func(CancelContext, chan []byte) chan []error
+type ErrorSliceFromByteAdapter func(CancelContext, <-chan []byte) <-chan []error
 
 // ErrorSliceToByteAdapter defines a function that that will take a channel of bytes and return a channel of []error.
-type ErrorSliceToByteAdapter func(CancelContext, chan []error) chan []byte
+type ErrorSliceToByteAdapter func(CancelContext, <-chan []error) <-chan []byte
 
 // ErrorSlicePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func ErrorSlicePartialCollect(ctx CancelContext, waitTime time.Duration, in chan []error) chan [][]error {
+func ErrorSlicePartialCollect(ctx CancelContext, waitTime time.Duration, in <-chan []error) <-chan [][]error {
 	res := make(chan [][]error, 0)
 
 	go func() {
@@ -57,7 +54,7 @@ func ErrorSlicePartialCollect(ctx CancelContext, waitTime time.Duration, in chan
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func ErrorSliceCollect(ctx CancelContext, waitTime time.Duration, in chan []error) chan [][]error {
+func ErrorSliceCollect(ctx CancelContext, waitTime time.Duration, in <-chan []error) <-chan [][]error {
 	res := make(chan [][]error, 0)
 
 	go func() {
@@ -94,7 +91,7 @@ func ErrorSliceCollect(ctx CancelContext, waitTime time.Duration, in chan []erro
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func ErrorSliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]error) []error, in chan []error) chan []error {
+func ErrorSliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]error) []error, in <-chan []error) <-chan []error {
 	res := make(chan []error, 0)
 
 	go func() {
@@ -123,11 +120,48 @@ func ErrorSliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([
 	return res
 }
 
+// ErrorSliceView defines a function which returns a channel where the items of the incoming channel
+// are provided to function after delivry to output channel, till the provided channel is closed.
+// This guarantees that whatever the function sees is something which has being delivered to the output
+// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the returning channel is closed as well.
+// This function guarantees complete data.
+func ErrorSliceView(ctx CancelContext, waitTime time.Duration, viewFn func([]error), in <-chan []error) <-chan []error {
+	res := make(chan []error, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(res)
+				return
+
+			case data, ok := <-in:
+				if !ok {
+					close(res)
+					return
+				}
+
+				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
 // ErrorSliceFilter defines a function which returns a channel where the items of the incoming channel
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func ErrorSliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]error) bool, in chan []error) chan []error {
+func ErrorSliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]error) bool, in <-chan []error) <-chan []error {
 	res := make(chan []error, 0)
 
 	go func() {
@@ -166,7 +200,7 @@ func ErrorSliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func ErrorSliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]error) bool, in chan []error) chan [][]error {
+func ErrorSliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]error) bool, in <-chan []error) <-chan [][]error {
 	res := make(chan [][]error, 0)
 
 	go func() {
@@ -221,7 +255,7 @@ func ErrorSliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorSliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []error) chan []error {
+func ErrorSliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan []error) <-chan []error {
 	res := make(chan []error, 0)
 
 	for _, elem := range senders {
@@ -316,7 +350,7 @@ func ErrorSliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, s
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorSliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []error) chan []error {
+func ErrorSliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan []error) <-chan []error {
 	res := make(chan []error, 0)
 
 	for _, elem := range senders {
@@ -412,7 +446,7 @@ func ErrorSliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, sender
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorSliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []error) chan [][]error {
+func ErrorSliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan []error) <-chan [][]error {
 	res := make(chan [][]error, 0)
 
 	for _, elem := range senders {
@@ -514,7 +548,7 @@ func ErrorSliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorSliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []error) chan [][]error {
+func ErrorSliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan []error) <-chan [][]error {
 	res := make(chan [][]error, 0)
 
 	for _, elem := range senders {
@@ -605,7 +639,7 @@ func ErrorSliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration,
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorSliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []error) chan [][]error {
+func ErrorSliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan []error) <-chan [][]error {
 	res := make(chan [][]error, 0)
 
 	for _, elem := range senders {
@@ -708,7 +742,7 @@ func ErrorSliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duratio
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func ErrorSliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []error) chan [][]error {
+func ErrorSliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan []error) <-chan [][]error {
 	res := make(chan [][]error, 0)
 
 	for _, elem := range senders {
@@ -800,8 +834,8 @@ type ErrorSliceDistributor struct {
 	sendWaitBeforeAbort time.Duration
 }
 
-// NewErrorSliceDisributor returns a new instance of a ErrorSliceDistributor.
-func NewErrorSliceDisributor(buffer int, sendWaitBeforeAbort time.Duration) *ErrorSliceDistributor {
+// NewErrorSliceDistributor returns a new instance of a ErrorSliceDistributor.
+func NewErrorSliceDistributor(buffer int, sendWaitBeforeAbort time.Duration) *ErrorSliceDistributor {
 	if sendWaitBeforeAbort <= 0 {
 		sendWaitBeforeAbort = defaultSendWithBeforeAbort
 	}
@@ -946,7 +980,7 @@ type MonoErrorSliceService interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.
@@ -972,7 +1006,7 @@ type ErrorSliceService interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.

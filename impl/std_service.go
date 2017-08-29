@@ -28,8 +28,8 @@ type StdService struct {
 
 // NewStdService returns a new instance of a StdOutService.
 func NewStdService(buffer int, maxWaitingTime time.Duration, readFrom io.Reader, writeTo io.Writer) *StdService {
-	pub := services.NewBytesDisributor(buffer, maxWaitingTime)
-	pubErr := services.NewErrorDisributor(buffer, maxWaitingTime)
+	pub := services.NewBytesDistributor(buffer, maxWaitingTime)
+	pubErr := services.NewErrorDistributor(buffer, maxWaitingTime)
 
 	defer pubErr.Start()
 	defer pub.Start()

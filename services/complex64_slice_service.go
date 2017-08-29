@@ -1,6 +1,3 @@
-//
-//
-//
 package services
 
 import (
@@ -11,15 +8,15 @@ import (
 //go:generate moz generate-file -fromFile ./complex64_slice_service.go -toDir ./impl/complex64slice
 
 // Complex64SliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of []complex64.
-type Complex64SliceFromByteAdapterWithContext func(CancelContext, chan []byte) chan []complex64
+type Complex64SliceFromByteAdapter func(CancelContext, <-chan []byte) <-chan []complex64
 
 // Complex64SliceToByteAdapter defines a function that that will take a channel of bytes and return a channel of []complex64.
-type Complex64SliceToByteAdapter func(CancelContext, chan []complex64) chan []byte
+type Complex64SliceToByteAdapter func(CancelContext, <-chan []complex64) <-chan []byte
 
 // Complex64SlicePartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func Complex64SlicePartialCollect(ctx CancelContext, waitTime time.Duration, in chan []complex64) chan [][]complex64 {
+func Complex64SlicePartialCollect(ctx CancelContext, waitTime time.Duration, in <-chan []complex64) <-chan [][]complex64 {
 	res := make(chan [][]complex64, 0)
 
 	go func() {
@@ -57,7 +54,7 @@ func Complex64SlicePartialCollect(ctx CancelContext, waitTime time.Duration, in 
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func Complex64SliceCollect(ctx CancelContext, waitTime time.Duration, in chan []complex64) chan [][]complex64 {
+func Complex64SliceCollect(ctx CancelContext, waitTime time.Duration, in <-chan []complex64) <-chan [][]complex64 {
 	res := make(chan [][]complex64, 0)
 
 	go func() {
@@ -94,7 +91,7 @@ func Complex64SliceCollect(ctx CancelContext, waitTime time.Duration, in chan []
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func Complex64SliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]complex64) []complex64, in chan []complex64) chan []complex64 {
+func Complex64SliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]complex64) []complex64, in <-chan []complex64) <-chan []complex64 {
 	res := make(chan []complex64, 0)
 
 	go func() {
@@ -123,11 +120,48 @@ func Complex64SliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn fu
 	return res
 }
 
+// Complex64SliceView defines a function which returns a channel where the items of the incoming channel
+// are provided to function after delivry to output channel, till the provided channel is closed.
+// This guarantees that whatever the function sees is something which has being delivered to the output
+// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the returning channel is closed as well.
+// This function guarantees complete data.
+func Complex64SliceView(ctx CancelContext, waitTime time.Duration, viewFn func([]complex64), in <-chan []complex64) <-chan []complex64 {
+	res := make(chan []complex64, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(res)
+				return
+
+			case data, ok := <-in:
+				if !ok {
+					close(res)
+					return
+				}
+
+				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
 // Complex64SliceFilter defines a function which returns a channel where the items of the incoming channel
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func Complex64SliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]complex64) bool, in chan []complex64) chan []complex64 {
+func Complex64SliceFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]complex64) bool, in <-chan []complex64) <-chan []complex64 {
 	res := make(chan []complex64, 0)
 
 	go func() {
@@ -166,7 +200,7 @@ func Complex64SliceFilter(ctx CancelContext, waitTime time.Duration, filterFn fu
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func Complex64SliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]complex64) bool, in chan []complex64) chan [][]complex64 {
+func Complex64SliceCollectUntil(ctx CancelContext, waitTime time.Duration, condition func([][]complex64) bool, in <-chan []complex64) <-chan [][]complex64 {
 	res := make(chan [][]complex64, 0)
 
 	go func() {
@@ -221,7 +255,7 @@ func Complex64SliceCollectUntil(ctx CancelContext, waitTime time.Duration, condi
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Complex64SliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []complex64) chan []complex64 {
+func Complex64SliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan []complex64) <-chan []complex64 {
 	res := make(chan []complex64, 0)
 
 	for _, elem := range senders {
@@ -316,7 +350,7 @@ func Complex64SliceMergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duratio
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Complex64SliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan []complex64) chan []complex64 {
+func Complex64SliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan []complex64) <-chan []complex64 {
 	res := make(chan []complex64, 0)
 
 	for _, elem := range senders {
@@ -412,7 +446,7 @@ func Complex64SliceMergeInOrder(ctx CancelContext, maxWaitTime time.Duration, se
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Complex64SliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []complex64) chan [][]complex64 {
+func Complex64SliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan []complex64) <-chan [][]complex64 {
 	res := make(chan [][]complex64, 0)
 
 	for _, elem := range senders {
@@ -514,7 +548,7 @@ func Complex64SliceCombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait t
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Complex64SliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []complex64) chan [][]complex64 {
+func Complex64SliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan []complex64) <-chan [][]complex64 {
 	res := make(chan [][]complex64, 0)
 
 	for _, elem := range senders {
@@ -605,7 +639,7 @@ func Complex64SliceCombineWithoutOrder(ctx CancelContext, maxItemWait time.Durat
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Complex64SliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []complex64) chan [][]complex64 {
+func Complex64SliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan []complex64) <-chan [][]complex64 {
 	res := make(chan [][]complex64, 0)
 
 	for _, elem := range senders {
@@ -708,7 +742,7 @@ func Complex64SliceCombineInPartialOrder(ctx CancelContext, maxItemWait time.Dur
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Complex64SliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan []complex64) chan [][]complex64 {
+func Complex64SliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan []complex64) <-chan [][]complex64 {
 	res := make(chan [][]complex64, 0)
 
 	for _, elem := range senders {
@@ -800,8 +834,8 @@ type Complex64SliceDistributor struct {
 	sendWaitBeforeAbort time.Duration
 }
 
-// NewComplex64SliceDisributor returns a new instance of a Complex64SliceDistributor.
-func NewComplex64SliceDisributor(buffer int, sendWaitBeforeAbort time.Duration) *Complex64SliceDistributor {
+// NewComplex64SliceDistributor returns a new instance of a Complex64SliceDistributor.
+func NewComplex64SliceDistributor(buffer int, sendWaitBeforeAbort time.Duration) *Complex64SliceDistributor {
 	if sendWaitBeforeAbort <= 0 {
 		sendWaitBeforeAbort = defaultSendWithBeforeAbort
 	}
@@ -946,7 +980,7 @@ type MonoComplex64SliceService interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.
@@ -972,7 +1006,7 @@ type Complex64SliceService interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.

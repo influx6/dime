@@ -1173,6 +1173,198 @@ func Test{{sel "Name"}}Mutate(t *testing.T) {
 	}
 }
 
+func Test{{sel "Name"}}View(t *testing.T) {
+	t.Logf("When data is View but not received due to context expiration on receive")
+	{
+
+		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
+		defer cancl()
+
+		incoming := make(chan {{sel "Type"}}, 0)
+		defer close(incoming)
+
+		outgoing := services.{{sel "Name"}}View(ctx, 2*time.Millisecond, func(item {{sel "Type"}}) {}, incoming)
+
+		_, ok := <-outgoing
+		if ok {
+			tests.Failed("Should have recieved close signal due to context expiration")
+		}
+		tests.Passed("Should have recieved close signal due to context expiration")
+	}
+
+	t.Logf("When data is filtered on each receive")
+	{
+
+		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		defer cancl()
+
+		incoming := make(chan {{sel "Type"}}, 0)
+		inview := make(chan {{sel "Type"}}, 0)
+
+		outgoing := services.{{sel "Name"}}View(ctx, 10*time.Millisecond, func(item {{sel "Type"}})  {
+			inview <- item
+		}, incoming)
+
+		go func() {
+			defer close(incoming)
+
+			for i := 1; i > 0; i-- {
+				{{ if eq (sel "Type") "map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]interface{}" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+				{{ if eq (sel "Type") "map[string]string" }}
+				 incoming <- {{sel "Type"}}{"day":"monday"}
+				{{ end }}
+ 
+				{{ if  eq (sel "Type") "byte" }}
+				 incoming <- {{sel "Type"}}('l')
+				{{ end }}
+				{{ if  eq (sel "Type") "[]byte" }}
+				 incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "uint" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "uint32" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "uint64" }}
+				 incoming <- 1
+				{{ end }}
+				{{ if  eq (sel "Type") "int64" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int32" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int16" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int8" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "int" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "complex128" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "complex64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float64" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "float32" }}
+				 incoming <- 2.0
+				{{ end }}
+				{{ if  eq (sel "Type") "bool" }}
+				 incoming <- 1%2 == 0
+				{{ end }}
+				{{ if  eq (sel "Type") "interface{}" }}
+				 incoming <- 2
+				{{ end }}
+				{{ if  eq (sel "Type") "error" }}
+				 incoming <- errors.New(fmt.Sprintf("%q","item"))
+				{{ end }}
+				{{ if  eq (sel "Type") "string" }}
+				 incoming <- fmt.Sprintf("%q","monday")
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[interface{}]interface{}" }}
+				 incoming <- {{sel "Type"}}{ map[interface{}]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]interface{}" }}
+				incoming <- {{sel "Type"}}{ map[string]interface{}{"day":"monday"} }
+				{{ end }}
+				{{ if eq (sel "Type") "[]map[string]string" }}
+				incoming <- {{sel "Type"}}{ map[string]string{"day":"monday"} }
+				{{ end }}
+  
+				{{ if  eq (sel "Type") "[]byte" }}
+				incoming <- {{sel "Type"}}("bashful")
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint8" }}
+				 incoming <- {{sel "Type"}}{1, 2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint32" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]uint64" }}
+				 incoming <- {{sel "Type"}}{1,2,3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int64" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int32" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int16" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int8" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]int" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex128" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]complex64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float64" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]float32" }}
+				 incoming <- {{sel "Type"}}{1.0, 2.0, 3.0}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]bool" }}
+				 incoming <- {{sel "Type"}}{(1%2 == 0), ((2)%2 == 0), ((2)%2 == 0)}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]interface{}" }}
+				 incoming <- {{sel "Type"}}{1, 2, 3}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]error" }}
+				 incoming <- {{sel "Type"}}{errors.New(fmt.Sprintf("%q","item")), errors.New(fmt.Sprintf("%q","item-2")), errors.New(fmt.Sprintf("%q",3))}
+				{{ end }}
+				{{ if  eq (sel "Type") "[]string" }}
+				 incoming <- {{sel "Type"}}{fmt.Sprintf("%q","monday")}
+				{{ end }}
+			}
+		}()
+
+		_, ok := <-outgoing
+		if !ok {
+			tests.Failed("Should have recieved only 1 item as value but got %t", ok)
+		}
+		tests.Passed("Should have recieved 1 item")
+
+		_, ok = <-inview
+		if !ok {
+			tests.Failed("Should have recieved only 1 item as value but got %t", ok)
+		}
+		tests.Passed("Should have recieved 1 item")
+
+
+		_, ok = <-outgoing
+		if ok {
+			tests.Failed("Should have recieved close signal")
+		}
+		tests.Passed("Should have recieved 1 item")
+	}
+}
+
+
 func Test{{sel "Name"}}Filter(t *testing.T) {
 	t.Logf("When data is filtered but not received due to context expiration on receive")
 	{
@@ -4255,7 +4447,7 @@ func Test{{sel "Name"}}CombineInPartialOrder(t *testing.T) {
 }
 
 func Test{{sel "Name"}}Distributor(t *testing.T) {
-	dist := services.New{{sel "Name"}}Disributor(0, 1*time.Second)
+	dist := services.New{{sel "Name"}}Distributor(0, 1*time.Second)
 	dist.Start()
 
 	incoming := make(chan {{sel "Type"}}, 1)

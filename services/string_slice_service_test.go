@@ -1,6 +1,3 @@
-//
-//
-//
 package services_test
 
 import (
@@ -266,6 +263,68 @@ func TestStringSliceMutate(t *testing.T) {
 			tests.Failed("Should have recieved close signal")
 		}
 		tests.Passed("Should have recieved close signal")
+	}
+}
+
+func TestStringSliceView(t *testing.T) {
+	t.Logf("When data is View but not received due to context expiration on receive")
+	{
+
+		ctx, cancl := context.WithTimeout(context.Background(), 5*time.Millisecond)
+		defer cancl()
+
+		incoming := make(chan []string, 0)
+		defer close(incoming)
+
+		outgoing := services.StringSliceView(ctx, 2*time.Millisecond, func(item []string) {}, incoming)
+
+		_, ok := <-outgoing
+		if ok {
+			tests.Failed("Should have recieved close signal due to context expiration")
+		}
+		tests.Passed("Should have recieved close signal due to context expiration")
+	}
+
+	t.Logf("When data is filtered on each receive")
+	{
+
+		ctx, cancl := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		defer cancl()
+
+		incoming := make(chan []string, 0)
+		inview := make(chan []string, 0)
+
+		outgoing := services.StringSliceView(ctx, 10*time.Millisecond, func(item []string) {
+			inview <- item
+		}, incoming)
+
+		go func() {
+			defer close(incoming)
+
+			for i := 1; i > 0; i-- {
+
+				incoming <- []string{fmt.Sprintf("%q", "monday")}
+
+			}
+		}()
+
+		_, ok := <-outgoing
+		if !ok {
+			tests.Failed("Should have recieved only 1 item as value but got %t", ok)
+		}
+		tests.Passed("Should have recieved 1 item")
+
+		_, ok = <-inview
+		if !ok {
+			tests.Failed("Should have recieved only 1 item as value but got %t", ok)
+		}
+		tests.Passed("Should have recieved 1 item")
+
+		_, ok = <-outgoing
+		if ok {
+			tests.Failed("Should have recieved close signal")
+		}
+		tests.Passed("Should have recieved 1 item")
 	}
 }
 
@@ -775,7 +834,7 @@ func TestStringSliceCombineInPartialOrder(t *testing.T) {
 }
 
 func TestStringSliceDistributor(t *testing.T) {
-	dist := services.NewStringSliceDisributor(0, 1*time.Second)
+	dist := services.NewStringSliceDistributor(0, 1*time.Second)
 	dist.Start()
 
 	incoming := make(chan []string, 1)

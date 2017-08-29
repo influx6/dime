@@ -1,6 +1,3 @@
-//
-//
-//
 package services
 
 import (
@@ -11,15 +8,15 @@ import (
 //go:generate moz generate-file -fromFile ./complex128_service.go -toDir ./impl/complex128
 
 // Complex128FromByteAdapter defines a function that that will take a channel of bytes and return a channel of complex128.
-type Complex128FromByteAdapterWithContext func(CancelContext, chan []byte) chan complex128
+type Complex128FromByteAdapter func(CancelContext, <-chan []byte) <-chan complex128
 
 // Complex128ToByteAdapter defines a function that that will take a channel of bytes and return a channel of complex128.
-type Complex128ToByteAdapter func(CancelContext, chan complex128) chan []byte
+type Complex128ToByteAdapter func(CancelContext, <-chan complex128) <-chan []byte
 
 // Complex128PartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func Complex128PartialCollect(ctx CancelContext, waitTime time.Duration, in chan complex128) chan []complex128 {
+func Complex128PartialCollect(ctx CancelContext, waitTime time.Duration, in <-chan complex128) <-chan []complex128 {
 	res := make(chan []complex128, 0)
 
 	go func() {
@@ -57,7 +54,7 @@ func Complex128PartialCollect(ctx CancelContext, waitTime time.Duration, in chan
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func Complex128Collect(ctx CancelContext, waitTime time.Duration, in chan complex128) chan []complex128 {
+func Complex128Collect(ctx CancelContext, waitTime time.Duration, in <-chan complex128) <-chan []complex128 {
 	res := make(chan []complex128, 0)
 
 	go func() {
@@ -94,7 +91,7 @@ func Complex128Collect(ctx CancelContext, waitTime time.Duration, in chan comple
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func Complex128Mutate(ctx CancelContext, waitTime time.Duration, mutateFn func(complex128) complex128, in chan complex128) chan complex128 {
+func Complex128Mutate(ctx CancelContext, waitTime time.Duration, mutateFn func(complex128) complex128, in <-chan complex128) <-chan complex128 {
 	res := make(chan complex128, 0)
 
 	go func() {
@@ -123,11 +120,48 @@ func Complex128Mutate(ctx CancelContext, waitTime time.Duration, mutateFn func(c
 	return res
 }
 
+// Complex128View defines a function which returns a channel where the items of the incoming channel
+// are provided to function after delivry to output channel, till the provided channel is closed.
+// This guarantees that whatever the function sees is something which has being delivered to the output
+// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the returning channel is closed as well.
+// This function guarantees complete data.
+func Complex128View(ctx CancelContext, waitTime time.Duration, viewFn func(complex128), in <-chan complex128) <-chan complex128 {
+	res := make(chan complex128, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(res)
+				return
+
+			case data, ok := <-in:
+				if !ok {
+					close(res)
+					return
+				}
+
+				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
 // Complex128Filter defines a function which returns a channel where the items of the incoming channel
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func Complex128Filter(ctx CancelContext, waitTime time.Duration, filterFn func(complex128) bool, in chan complex128) chan complex128 {
+func Complex128Filter(ctx CancelContext, waitTime time.Duration, filterFn func(complex128) bool, in <-chan complex128) <-chan complex128 {
 	res := make(chan complex128, 0)
 
 	go func() {
@@ -166,7 +200,7 @@ func Complex128Filter(ctx CancelContext, waitTime time.Duration, filterFn func(c
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func Complex128CollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]complex128) bool, in chan complex128) chan []complex128 {
+func Complex128CollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]complex128) bool, in <-chan complex128) <-chan []complex128 {
 	res := make(chan []complex128, 0)
 
 	go func() {
@@ -221,7 +255,7 @@ func Complex128CollectUntil(ctx CancelContext, waitTime time.Duration, condition
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Complex128MergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan complex128) chan []complex128 {
+func Complex128MergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan complex128) <-chan []complex128 {
 	res := make(chan []complex128, 0)
 
 	for _, elem := range senders {
@@ -316,7 +350,7 @@ func Complex128MergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, s
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Complex128MergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan complex128) chan []complex128 {
+func Complex128MergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan complex128) <-chan []complex128 {
 	res := make(chan []complex128, 0)
 
 	for _, elem := range senders {
@@ -412,7 +446,7 @@ func Complex128MergeInOrder(ctx CancelContext, maxWaitTime time.Duration, sender
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Complex128CombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan complex128) chan []complex128 {
+func Complex128CombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan complex128) <-chan []complex128 {
 	res := make(chan []complex128, 0)
 
 	for _, elem := range senders {
@@ -514,7 +548,7 @@ func Complex128CombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Complex128CombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan complex128) chan []complex128 {
+func Complex128CombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan complex128) <-chan []complex128 {
 	res := make(chan []complex128, 0)
 
 	for _, elem := range senders {
@@ -605,7 +639,7 @@ func Complex128CombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration,
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Complex128CombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan complex128) chan []complex128 {
+func Complex128CombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan complex128) <-chan []complex128 {
 	res := make(chan []complex128, 0)
 
 	for _, elem := range senders {
@@ -708,7 +742,7 @@ func Complex128CombineInPartialOrder(ctx CancelContext, maxItemWait time.Duratio
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Complex128CombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan complex128) chan []complex128 {
+func Complex128CombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan complex128) <-chan []complex128 {
 	res := make(chan []complex128, 0)
 
 	for _, elem := range senders {
@@ -800,8 +834,8 @@ type Complex128Distributor struct {
 	sendWaitBeforeAbort time.Duration
 }
 
-// NewComplex128Disributor returns a new instance of a Complex128Distributor.
-func NewComplex128Disributor(buffer int, sendWaitBeforeAbort time.Duration) *Complex128Distributor {
+// NewComplex128Distributor returns a new instance of a Complex128Distributor.
+func NewComplex128Distributor(buffer int, sendWaitBeforeAbort time.Duration) *Complex128Distributor {
 	if sendWaitBeforeAbort <= 0 {
 		sendWaitBeforeAbort = defaultSendWithBeforeAbort
 	}
@@ -946,7 +980,7 @@ type MonoComplex128Service interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.
@@ -972,7 +1006,7 @@ type Complex128Service interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.

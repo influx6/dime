@@ -1,6 +1,3 @@
-//
-//
-//
 package services
 
 import (
@@ -11,15 +8,15 @@ import (
 //go:generate moz generate-file -fromFile ./float64_service.go -toDir ./impl/float64
 
 // Float64FromByteAdapter defines a function that that will take a channel of bytes and return a channel of float64.
-type Float64FromByteAdapterWithContext func(CancelContext, chan []byte) chan float64
+type Float64FromByteAdapter func(CancelContext, <-chan []byte) <-chan float64
 
 // Float64ToByteAdapter defines a function that that will take a channel of bytes and return a channel of float64.
-type Float64ToByteAdapter func(CancelContext, chan float64) chan []byte
+type Float64ToByteAdapter func(CancelContext, <-chan float64) <-chan []byte
 
 // Float64PartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func Float64PartialCollect(ctx CancelContext, waitTime time.Duration, in chan float64) chan []float64 {
+func Float64PartialCollect(ctx CancelContext, waitTime time.Duration, in <-chan float64) <-chan []float64 {
 	res := make(chan []float64, 0)
 
 	go func() {
@@ -57,7 +54,7 @@ func Float64PartialCollect(ctx CancelContext, waitTime time.Duration, in chan fl
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func Float64Collect(ctx CancelContext, waitTime time.Duration, in chan float64) chan []float64 {
+func Float64Collect(ctx CancelContext, waitTime time.Duration, in <-chan float64) <-chan []float64 {
 	res := make(chan []float64, 0)
 
 	go func() {
@@ -94,7 +91,7 @@ func Float64Collect(ctx CancelContext, waitTime time.Duration, in chan float64) 
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func Float64Mutate(ctx CancelContext, waitTime time.Duration, mutateFn func(float64) float64, in chan float64) chan float64 {
+func Float64Mutate(ctx CancelContext, waitTime time.Duration, mutateFn func(float64) float64, in <-chan float64) <-chan float64 {
 	res := make(chan float64, 0)
 
 	go func() {
@@ -123,11 +120,48 @@ func Float64Mutate(ctx CancelContext, waitTime time.Duration, mutateFn func(floa
 	return res
 }
 
+// Float64View defines a function which returns a channel where the items of the incoming channel
+// are provided to function after delivry to output channel, till the provided channel is closed.
+// This guarantees that whatever the function sees is something which has being delivered to the output
+// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the returning channel is closed as well.
+// This function guarantees complete data.
+func Float64View(ctx CancelContext, waitTime time.Duration, viewFn func(float64), in <-chan float64) <-chan float64 {
+	res := make(chan float64, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(res)
+				return
+
+			case data, ok := <-in:
+				if !ok {
+					close(res)
+					return
+				}
+
+				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
 // Float64Filter defines a function which returns a channel where the items of the incoming channel
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func Float64Filter(ctx CancelContext, waitTime time.Duration, filterFn func(float64) bool, in chan float64) chan float64 {
+func Float64Filter(ctx CancelContext, waitTime time.Duration, filterFn func(float64) bool, in <-chan float64) <-chan float64 {
 	res := make(chan float64, 0)
 
 	go func() {
@@ -166,7 +200,7 @@ func Float64Filter(ctx CancelContext, waitTime time.Duration, filterFn func(floa
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func Float64CollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]float64) bool, in chan float64) chan []float64 {
+func Float64CollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]float64) bool, in <-chan float64) <-chan []float64 {
 	res := make(chan []float64, 0)
 
 	go func() {
@@ -221,7 +255,7 @@ func Float64CollectUntil(ctx CancelContext, waitTime time.Duration, condition fu
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64MergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan float64) chan []float64 {
+func Float64MergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan float64) <-chan []float64 {
 	res := make(chan []float64, 0)
 
 	for _, elem := range senders {
@@ -316,7 +350,7 @@ func Float64MergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, send
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64MergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan float64) chan []float64 {
+func Float64MergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan float64) <-chan []float64 {
 	res := make(chan []float64, 0)
 
 	for _, elem := range senders {
@@ -412,7 +446,7 @@ func Float64MergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders .
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64CombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan float64) chan []float64 {
+func Float64CombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan float64) <-chan []float64 {
 	res := make(chan []float64, 0)
 
 	for _, elem := range senders {
@@ -514,7 +548,7 @@ func Float64CombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Dur
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64CombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan float64) chan []float64 {
+func Float64CombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan float64) <-chan []float64 {
 	res := make(chan []float64, 0)
 
 	for _, elem := range senders {
@@ -605,7 +639,7 @@ func Float64CombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, se
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64CombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan float64) chan []float64 {
+func Float64CombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan float64) <-chan []float64 {
 	res := make(chan []float64, 0)
 
 	for _, elem := range senders {
@@ -708,7 +742,7 @@ func Float64CombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, 
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func Float64CombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan float64) chan []float64 {
+func Float64CombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan float64) <-chan []float64 {
 	res := make(chan []float64, 0)
 
 	for _, elem := range senders {
@@ -800,8 +834,8 @@ type Float64Distributor struct {
 	sendWaitBeforeAbort time.Duration
 }
 
-// NewFloat64Disributor returns a new instance of a Float64Distributor.
-func NewFloat64Disributor(buffer int, sendWaitBeforeAbort time.Duration) *Float64Distributor {
+// NewFloat64Distributor returns a new instance of a Float64Distributor.
+func NewFloat64Distributor(buffer int, sendWaitBeforeAbort time.Duration) *Float64Distributor {
 	if sendWaitBeforeAbort <= 0 {
 		sendWaitBeforeAbort = defaultSendWithBeforeAbort
 	}
@@ -946,7 +980,7 @@ type MonoFloat64Service interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.
@@ -972,7 +1006,7 @@ type Float64Service interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.

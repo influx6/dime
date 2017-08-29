@@ -1,6 +1,3 @@
-//
-//
-//
 package services
 
 import (
@@ -11,15 +8,15 @@ import (
 //go:generate moz generate-file -fromFile ./uint8_service.go -toDir ./impl/uint8
 
 // UInt8FromByteAdapter defines a function that that will take a channel of bytes and return a channel of uint8.
-type UInt8FromByteAdapterWithContext func(CancelContext, chan []byte) chan uint8
+type UInt8FromByteAdapter func(CancelContext, <-chan []byte) <-chan uint8
 
 // UInt8ToByteAdapter defines a function that that will take a channel of bytes and return a channel of uint8.
-type UInt8ToByteAdapter func(CancelContext, chan uint8) chan []byte
+type UInt8ToByteAdapter func(CancelContext, <-chan uint8) <-chan []byte
 
 // UInt8PartialCollect defines a function which returns a channel where the items of the incoming channel
 // are buffered until the channel is closed or the context expires returning whatever was collected, and closing the returning channel.
 // This function does not guarantee complete data, because if the context expires, what is already gathered even if incomplete is returned.
-func UInt8PartialCollect(ctx CancelContext, waitTime time.Duration, in chan uint8) chan []uint8 {
+func UInt8PartialCollect(ctx CancelContext, waitTime time.Duration, in <-chan uint8) <-chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	go func() {
@@ -57,7 +54,7 @@ func UInt8PartialCollect(ctx CancelContext, waitTime time.Duration, in chan uint
 // are buffered until the channel is closed, nothing will be returned if the channel given is not closed  or the context expires.
 // Once done, returning channel is closed.
 // This function guarantees complete data.
-func UInt8Collect(ctx CancelContext, waitTime time.Duration, in chan uint8) chan []uint8 {
+func UInt8Collect(ctx CancelContext, waitTime time.Duration, in <-chan uint8) <-chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	go func() {
@@ -94,7 +91,7 @@ func UInt8Collect(ctx CancelContext, waitTime time.Duration, in chan uint8) chan
 // are mutated based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func UInt8Mutate(ctx CancelContext, waitTime time.Duration, mutateFn func(uint8) uint8, in chan uint8) chan uint8 {
+func UInt8Mutate(ctx CancelContext, waitTime time.Duration, mutateFn func(uint8) uint8, in <-chan uint8) <-chan uint8 {
 	res := make(chan uint8, 0)
 
 	go func() {
@@ -123,11 +120,48 @@ func UInt8Mutate(ctx CancelContext, waitTime time.Duration, mutateFn func(uint8)
 	return res
 }
 
+// UInt8View defines a function which returns a channel where the items of the incoming channel
+// are provided to function after delivry to output channel, till the provided channel is closed.
+// This guarantees that whatever the function sees is something which has being delivered to the output
+// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the returning channel is closed as well.
+// This function guarantees complete data.
+func UInt8View(ctx CancelContext, waitTime time.Duration, viewFn func(uint8), in <-chan uint8) <-chan uint8 {
+	res := make(chan uint8, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(res)
+				return
+
+			case data, ok := <-in:
+				if !ok {
+					close(res)
+					return
+				}
+
+				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
 // UInt8Filter defines a function which returns a channel where the items of the incoming channel
 // are filtered based on a function, till the provided channel is closed.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
-func UInt8Filter(ctx CancelContext, waitTime time.Duration, filterFn func(uint8) bool, in chan uint8) chan uint8 {
+func UInt8Filter(ctx CancelContext, waitTime time.Duration, filterFn func(uint8) bool, in <-chan uint8) <-chan uint8 {
 	res := make(chan uint8, 0)
 
 	go func() {
@@ -166,7 +200,7 @@ func UInt8Filter(ctx CancelContext, waitTime time.Duration, filterFn func(uint8)
 // specific criteria. If the channel is closed before the criteria is met, what data is left is sent down the returned channel,
 // closing that channel. If the context expires then data gathered is returned and returning channel is closed.
 // This function guarantees some data to be delivered.
-func UInt8CollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]uint8) bool, in chan uint8) chan []uint8 {
+func UInt8CollectUntil(ctx CancelContext, waitTime time.Duration, condition func([]uint8) bool, in <-chan uint8) <-chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	go func() {
@@ -221,7 +255,7 @@ func UInt8CollectUntil(ctx CancelContext, waitTime time.Duration, condition func
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt8MergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan uint8) chan []uint8 {
+func UInt8MergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan uint8) <-chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	for _, elem := range senders {
@@ -316,7 +350,7 @@ func UInt8MergeWithoutOrder(ctx CancelContext, maxWaitTime time.Duration, sender
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt8MergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...chan uint8) chan []uint8 {
+func UInt8MergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...<-chan uint8) <-chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	for _, elem := range senders {
@@ -412,7 +446,7 @@ func UInt8MergeInOrder(ctx CancelContext, maxWaitTime time.Duration, senders ...
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt8CombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan uint8) chan []uint8 {
+func UInt8CombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan uint8) <-chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	for _, elem := range senders {
@@ -514,7 +548,7 @@ func UInt8CombinePartiallyWithoutOrder(ctx CancelContext, maxItemWait time.Durat
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt8CombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan uint8) chan []uint8 {
+func UInt8CombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan uint8) <-chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	for _, elem := range senders {
@@ -605,7 +639,7 @@ func UInt8CombineWithoutOrder(ctx CancelContext, maxItemWait time.Duration, send
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt8CombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan uint8) chan []uint8 {
+func UInt8CombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan uint8) <-chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	for _, elem := range senders {
@@ -708,7 +742,7 @@ func UInt8CombineInPartialOrder(ctx CancelContext, maxItemWait time.Duration, se
 //    but all channels will have a single data slot for a partial data collection session.
 // 7. Will continue to gather data from provided channels until all are closed or the context has expired.
 // 8. If any of the senders is nil then the returned channel will be closed, has this leaves things in an unstable state.
-func UInt8CombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...chan uint8) chan []uint8 {
+func UInt8CombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ...<-chan uint8) <-chan []uint8 {
 	res := make(chan []uint8, 0)
 
 	for _, elem := range senders {
@@ -800,8 +834,8 @@ type UInt8Distributor struct {
 	sendWaitBeforeAbort time.Duration
 }
 
-// NewUInt8Disributor returns a new instance of a UInt8Distributor.
-func NewUInt8Disributor(buffer int, sendWaitBeforeAbort time.Duration) *UInt8Distributor {
+// NewUInt8Distributor returns a new instance of a UInt8Distributor.
+func NewUInt8Distributor(buffer int, sendWaitBeforeAbort time.Duration) *UInt8Distributor {
 	if sendWaitBeforeAbort <= 0 {
 		sendWaitBeforeAbort = defaultSendWithBeforeAbort
 	}
@@ -946,7 +980,7 @@ type MonoUInt8Service interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.
@@ -972,7 +1006,7 @@ type UInt8Service interface {
 
 	// Done defines a signal to other pending services to know whether the Service is still servicing
 	// request.
-	Done() chan struct{}
+	Done() <-chan struct{}
 
 	// Service defines a function to be called to stop the Service internal operation and to close
 	// all read/write operations.
