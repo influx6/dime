@@ -45,9 +45,6 @@ func NewReaderService(maxReadBufferSize int, maxWaitingTime time.Duration, reade
 	pub := services.NewBytesDistributor(0, maxWaitingTime)
 	pubErr := services.NewErrorDistributor(0, maxWaitingTime)
 
-	defer pubErr.Start()
-	defer pub.Start()
-
 	stdServ := ReaderService{
 		pub:         pub,
 		pubErrs:     pubErr,
@@ -70,13 +67,6 @@ func (std *ReaderService) Done() <-chan struct{} {
 // Stop ends all operations of the service.
 func (std *ReaderService) Stop() error {
 	close(std.stopped)
-
-	std.pub.CloseAllSubs()
-	std.pubErrs.CloseAllSubs()
-
-	// Clear all pending subscribers.
-	std.pub.Clear()
-	std.pubErrs.Clear()
 
 	// Stop subscription delivery.
 	std.pub.Stop()
@@ -166,9 +156,6 @@ type LineReaderService struct {
 func NewLineReaderService(buffer int, maxWaitingTime time.Duration, reader io.Reader) *LineReaderService {
 	pub := services.NewBytesDistributor(buffer, maxWaitingTime)
 	pubErr := services.NewErrorDistributor(buffer, maxWaitingTime)
-
-	defer pubErr.Start()
-	defer pub.Start()
 
 	stdServ := LineReaderService{
 		pub:      pub,

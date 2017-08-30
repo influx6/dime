@@ -42,8 +42,6 @@ type WriterService struct {
 func NewWriterService(buffer int, maxWaitingTime time.Duration, w io.Writer) *WriterService {
 	pubErr := services.NewErrorDistributor(buffer, maxWaitingTime)
 
-	defer pubErr.Start()
-
 	stdServ := WriterService{
 		writer:   w,
 		pubErrs:  pubErr,
@@ -65,10 +63,6 @@ func (std *WriterService) Done() <-chan struct{} {
 // Stop ends all operations of the service.
 func (std *WriterService) Stop() error {
 	close(std.stopped)
-
-	// Clear all pending subscribers.
-	std.pubErrs.CloseAllSubs()
-	std.pubErrs.Clear()
 
 	// Stop subscription delivery.
 	std.pubErrs.Stop()
@@ -122,7 +116,7 @@ func (std *WriterService) runWriter() {
 				return
 			case data, ok := <-std.incoming:
 				if !ok {
-					std.pubErrs.CloseAllSubs()
+					std.pubErrs.Stop()
 					return
 				}
 
