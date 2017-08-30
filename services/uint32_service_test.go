@@ -829,7 +829,6 @@ func TestUInt32CombineInPartialOrder(t *testing.T) {
 
 func TestUInt32Distributor(t *testing.T) {
 	dist := services.NewUInt32Distributor(0, 1*time.Second)
-	dist.Start()
 
 	incoming := make(chan uint32, 1)
 	incoming2 := make(chan uint32, 1)
@@ -838,6 +837,8 @@ func TestUInt32Distributor(t *testing.T) {
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
+
+	defer dist.Stop()
 
 	dist.Publish(
 

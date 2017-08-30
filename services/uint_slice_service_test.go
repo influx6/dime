@@ -834,7 +834,6 @@ func TestUIntSliceCombineInPartialOrder(t *testing.T) {
 
 func TestUIntSliceDistributor(t *testing.T) {
 	dist := services.NewUIntSliceDistributor(0, 1*time.Second)
-	dist.Start()
 
 	incoming := make(chan []uint, 1)
 	incoming2 := make(chan []uint, 1)
@@ -843,6 +842,8 @@ func TestUIntSliceDistributor(t *testing.T) {
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
+
+	defer dist.Stop()
 
 	dist.Publish(
 

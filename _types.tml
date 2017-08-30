@@ -165,7 +165,7 @@ func {{sel "Name"}}View(ctx CancelContext, waitTime time.Duration, viewFn func({
 
 // {{sel "Name"}}Sink defines a function which returns a channel, where the items of the returned channel
 // are to be writting to the incoming channel, till the returned channel is closed which will lead to the 
-// closure of the incoming channed.
+// closure of the incoming channed if closeInputAlso flag is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel 
 // and was accepted. 
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -173,7 +173,7 @@ func {{sel "Name"}}View(ctx CancelContext, waitTime time.Duration, viewFn func({
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it 
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func {{sel "Name"}}Sink(ctx CancelContext, waitTime time.Duration, in chan<- {{ sel "Type" }}) chan<- {{sel "Type"}} {
+func {{sel "Name"}}Sink(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, in chan<- {{ sel "Type" }}) chan<- {{sel "Type"}} {
 	res := make(chan {{sel "Type"}}, 0)
 
 	go func() {
@@ -183,12 +183,16 @@ func {{sel "Name"}}Sink(ctx CancelContext, waitTime time.Duration, in chan<- {{ 
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -240,7 +244,7 @@ func {{sel "Name"}}WriterFuncTo(ctx CancelContext, in chan<- {{ sel "Type" }}) {
 // {{sel "Name"}}SinkFilter defines a function which returns a channel where the items of the returned channel
 // are provided to function which filters incoming values and allows only acceptable values, which is delivered 
 // to the incoming channel, till the returned channel is closed by the user and will lead to the closure of the 
-// incoming channel as well.
+// incoming channed if closeInputAlso flag is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel 
 // and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -248,7 +252,7 @@ func {{sel "Name"}}WriterFuncTo(ctx CancelContext, in chan<- {{ sel "Type" }}) {
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it 
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func {{sel "Name"}}SinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func({{ sel "Type" }}) bool, in chan<- {{ sel "Type" }}) chan<- {{sel "Type"}} {
+func {{sel "Name"}}SinkFilter(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, filterFn func({{ sel "Type" }}) bool, in chan<- {{ sel "Type" }}) chan<- {{sel "Type"}} {
 	res := make(chan {{sel "Type"}}, 0)
 
 	go func() {
@@ -258,12 +262,16 @@ func {{sel "Name"}}SinkFilter(ctx CancelContext, waitTime time.Duration, filterF
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -284,7 +292,8 @@ func {{sel "Name"}}SinkFilter(ctx CancelContext, waitTime time.Duration, filterF
 
 // {{sel "Name"}}SinkMutate defines a function which returns a channel where the items of the returned channel
 // are provided to function which mutates and returns a new value then which is  delivered to the incoming channel, 
-// till the returned channel is closed by the user and will lead to the closure of the incoming channel as well.
+// till the returned channel is closed by the user and will lead to the closure of the incoming channel as well if 
+// the closeInputAlso flag is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel 
 // and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -292,7 +301,7 @@ func {{sel "Name"}}SinkFilter(ctx CancelContext, waitTime time.Duration, filterF
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it 
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func {{sel "Name"}}SinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func({{ sel "Type" }}) {{sel "Type"}}, in chan<- {{ sel "Type" }}) chan<- {{sel "Type"}} {
+func {{sel "Name"}}SinkMutate(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, mutateFn func({{ sel "Type" }}) {{sel "Type"}}, in chan<- {{ sel "Type" }}) chan<- {{sel "Type"}} {
 	res := make(chan {{sel "Type"}}, 0)
 
 	go func() {
@@ -302,12 +311,16 @@ func {{sel "Name"}}SinkMutate(ctx CancelContext, waitTime time.Duration, mutateF
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -324,7 +337,7 @@ func {{sel "Name"}}SinkMutate(ctx CancelContext, waitTime time.Duration, mutateF
 
 // {{sel "Name"}}SinkView defines a function which returns a channel where the items of the returned channel
 // are provided to function after delivry to incoming channel, till the returned channel is closed by the user 
-// and will lead to the closure of the incoming channel as well.
+// and will lead to the closure of the incoming channel as well if the closeInputAlso is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel 
 // and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -332,7 +345,7 @@ func {{sel "Name"}}SinkMutate(ctx CancelContext, waitTime time.Duration, mutateF
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it 
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func {{sel "Name"}}SinkView(ctx CancelContext, waitTime time.Duration, viewFn func({{ sel "Type" }}), in chan<- {{ sel "Type" }}) chan<- {{sel "Type"}} {
+func {{sel "Name"}}SinkView(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, viewFn func({{ sel "Type" }}), in chan<- {{ sel "Type" }}) chan<- {{sel "Type"}} {
 	res := make(chan {{sel "Type"}}, 0)
 
 	go func() {
@@ -342,12 +355,16 @@ func {{sel "Name"}}SinkView(ctx CancelContext, waitTime time.Duration, viewFn fu
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -1035,6 +1052,7 @@ type {{ sel "Name" }}Distributor struct {
 	running             int64
 	messages            chan {{ sel "Type" }}
 	closer               chan struct{}
+	subcloser               chan struct{}
 	clear               chan struct{}
 	subscribers         []chan<- {{ sel "Type" }}
 	newSub              chan chan<- {{ sel "Type" }}
@@ -1047,14 +1065,20 @@ func New{{sel "Name"}}Distributor(buffer int, sendWaitBeforeAbort time.Duration)
 		sendWaitBeforeAbort = defaultSendWithBeforeAbort
 	}
 
-	return &{{ sel "Name" }}Distributor{
+	dist := &{{ sel "Name" }}Distributor{
 		clear:               make(chan struct{}, 0),
 		closer:               make(chan struct{}, 0),
+		subcloser:               make(chan struct{}, 0),
 		subscribers:         make([]chan<- {{ sel "Type" }}, 0),
 		newSub:              make(chan chan<- {{ sel "Type" }}, 0),
 		messages:            make(chan {{ sel "Type" }}, buffer),
 		sendWaitBeforeAbort: sendWaitBeforeAbort,
 	}
+
+	atomic.AddInt64(&dist.running, 1)
+	go dist.manage()
+
+	return dist
 }
 
 // PublishDeadline sends the message into the distributor to be delivered to all subscribers if it has not
@@ -1108,17 +1132,8 @@ func (d *{{ sel "Name" }}Distributor) Stop() {
 		return
 	}
 
+	d.subcloser <- struct{}{}
 	d.closer <- struct{}{}
-}
-
-// Start initializes the distributor to deliver messages to subscribers.
-func (d *{{ sel "Name" }}Distributor) Start() {
-	if atomic.LoadInt64(&d.running) != 0 {
-		return
-	}
-
-	atomic.AddInt64(&d.running, 1)
-	go d.manage()
 }
 
 // manage implements necessary logic to manage message delivery and
@@ -1134,6 +1149,12 @@ func (d *{{ sel "Name" }}Distributor) manage() {
 		case <-ticker.C:
 			ticker.Reset(1 * time.Second)
 			continue
+		case <-d.subcloser:
+			for _, sub := range d.subscribers {
+				close(sub)
+			}
+
+			d.subscribers = nil
 		case <-d.clear:
 			d.subscribers = nil
 

@@ -81,7 +81,7 @@ func MetricByteFunctorFunction(id string, m metrics.Metrics, fx ByteFunction) By
 				"id":            id,
 				"totalExecuted": total,
 				"executionId":   executionCount,
-				"area":          "functors",
+				"area":          "functors.stack",
 				"track":         "functor_executions",
 			}).Trace("Executing ByteFunctor").End())
 
@@ -95,10 +95,30 @@ func MetricByteFunctorFunction(id string, m metrics.Metrics, fx ByteFunction) By
 				}))
 			}, in)
 
-			// outView := make(chan []byte)
-			// errView := make(chan error)
+			outView := services.BytesSinkView(ctx, false, 100*time.Millisecond, func(sent []byte) {
+				m.Emit(metrics.WithFields(metrics.Fields{
+					"id":          id,
+					"executionId": executionCount,
+					"area":        "functors.outgoing",
+					"track":       "functor_executions",
+					"data":        sent,
+				}))
+			}, out)
 
-			fx(ctx, inView, out, errs)
+			errView := services.ErrorSinkView(ctx, false, 100*time.Millisecond, func(whyErr error) {
+				m.Emit(metrics.WithFields(metrics.Fields{
+					"id":          id,
+					"executionId": executionCount,
+					"area":        "functors.outgoing.error",
+					"track":       "functor_executions",
+					"data":        whyErr,
+				}))
+			}, errs)
+
+			defer close(outView)
+			defer close(errView)
+
+			fx(ctx, inView, outView, errView)
 		}
 	}
 }

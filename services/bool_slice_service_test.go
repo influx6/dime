@@ -834,7 +834,6 @@ func TestBoolSliceCombineInPartialOrder(t *testing.T) {
 
 func TestBoolSliceDistributor(t *testing.T) {
 	dist := services.NewBoolSliceDistributor(0, 1*time.Second)
-	dist.Start()
 
 	incoming := make(chan []bool, 1)
 	incoming2 := make(chan []bool, 1)
@@ -843,6 +842,8 @@ func TestBoolSliceDistributor(t *testing.T) {
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
+
+	defer dist.Stop()
 
 	dist.Publish(
 

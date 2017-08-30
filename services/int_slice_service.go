@@ -163,7 +163,7 @@ func IntSliceView(ctx CancelContext, waitTime time.Duration, viewFn func([]int),
 
 // IntSliceSink defines a function which returns a channel, where the items of the returned channel
 // are to be writting to the incoming channel, till the returned channel is closed which will lead to the
-// closure of the incoming channed.
+// closure of the incoming channed if closeInputAlso flag is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel
 // and was accepted.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -171,7 +171,7 @@ func IntSliceView(ctx CancelContext, waitTime time.Duration, viewFn func([]int),
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func IntSliceSink(ctx CancelContext, waitTime time.Duration, in chan<- []int) chan<- []int {
+func IntSliceSink(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, in chan<- []int) chan<- []int {
 	res := make(chan []int, 0)
 
 	go func() {
@@ -181,12 +181,16 @@ func IntSliceSink(ctx CancelContext, waitTime time.Duration, in chan<- []int) ch
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -237,7 +241,7 @@ func IntSliceWriterFuncTo(ctx CancelContext, in chan<- []int) IntSliceDataWriter
 // IntSliceSinkFilter defines a function which returns a channel where the items of the returned channel
 // are provided to function which filters incoming values and allows only acceptable values, which is delivered
 // to the incoming channel, till the returned channel is closed by the user and will lead to the closure of the
-// incoming channel as well.
+// incoming channed if closeInputAlso flag is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel
 // and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -245,7 +249,7 @@ func IntSliceWriterFuncTo(ctx CancelContext, in chan<- []int) IntSliceDataWriter
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func IntSliceSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]int) bool, in chan<- []int) chan<- []int {
+func IntSliceSinkFilter(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, filterFn func([]int) bool, in chan<- []int) chan<- []int {
 	res := make(chan []int, 0)
 
 	go func() {
@@ -255,12 +259,16 @@ func IntSliceSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -281,7 +289,8 @@ func IntSliceSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func
 
 // IntSliceSinkMutate defines a function which returns a channel where the items of the returned channel
 // are provided to function which mutates and returns a new value then which is  delivered to the incoming channel,
-// till the returned channel is closed by the user and will lead to the closure of the incoming channel as well.
+// till the returned channel is closed by the user and will lead to the closure of the incoming channel as well if
+// the closeInputAlso flag is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel
 // and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -289,7 +298,7 @@ func IntSliceSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func IntSliceSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]int) []int, in chan<- []int) chan<- []int {
+func IntSliceSinkMutate(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, mutateFn func([]int) []int, in chan<- []int) chan<- []int {
 	res := make(chan []int, 0)
 
 	go func() {
@@ -299,12 +308,16 @@ func IntSliceSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -321,7 +334,7 @@ func IntSliceSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func
 
 // IntSliceSinkView defines a function which returns a channel where the items of the returned channel
 // are provided to function after delivry to incoming channel, till the returned channel is closed by the user
-// and will lead to the closure of the incoming channel as well.
+// and will lead to the closure of the incoming channel as well if the closeInputAlso is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel
 // and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -329,7 +342,7 @@ func IntSliceSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func IntSliceSinkView(ctx CancelContext, waitTime time.Duration, viewFn func([]int), in chan<- []int) chan<- []int {
+func IntSliceSinkView(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, viewFn func([]int), in chan<- []int) chan<- []int {
 	res := make(chan []int, 0)
 
 	go func() {
@@ -339,12 +352,16 @@ func IntSliceSinkView(ctx CancelContext, waitTime time.Duration, viewFn func([]i
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -1031,6 +1048,7 @@ type IntSliceDistributor struct {
 	running             int64
 	messages            chan []int
 	closer              chan struct{}
+	subcloser           chan struct{}
 	clear               chan struct{}
 	subscribers         []chan<- []int
 	newSub              chan chan<- []int
@@ -1043,14 +1061,20 @@ func NewIntSliceDistributor(buffer int, sendWaitBeforeAbort time.Duration) *IntS
 		sendWaitBeforeAbort = defaultSendWithBeforeAbort
 	}
 
-	return &IntSliceDistributor{
+	dist := &IntSliceDistributor{
 		clear:               make(chan struct{}, 0),
 		closer:              make(chan struct{}, 0),
+		subcloser:           make(chan struct{}, 0),
 		subscribers:         make([]chan<- []int, 0),
 		newSub:              make(chan chan<- []int, 0),
 		messages:            make(chan []int, buffer),
 		sendWaitBeforeAbort: sendWaitBeforeAbort,
 	}
+
+	atomic.AddInt64(&dist.running, 1)
+	go dist.manage()
+
+	return dist
 }
 
 // PublishDeadline sends the message into the distributor to be delivered to all subscribers if it has not
@@ -1104,17 +1128,8 @@ func (d *IntSliceDistributor) Stop() {
 		return
 	}
 
+	d.subcloser <- struct{}{}
 	d.closer <- struct{}{}
-}
-
-// Start initializes the distributor to deliver messages to subscribers.
-func (d *IntSliceDistributor) Start() {
-	if atomic.LoadInt64(&d.running) != 0 {
-		return
-	}
-
-	atomic.AddInt64(&d.running, 1)
-	go d.manage()
 }
 
 // manage implements necessary logic to manage message delivery and
@@ -1130,6 +1145,12 @@ func (d *IntSliceDistributor) manage() {
 		case <-ticker.C:
 			ticker.Reset(1 * time.Second)
 			continue
+		case <-d.subcloser:
+			for _, sub := range d.subscribers {
+				close(sub)
+			}
+
+			d.subscribers = nil
 		case <-d.clear:
 			d.subscribers = nil
 

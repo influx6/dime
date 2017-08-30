@@ -829,7 +829,6 @@ func TestFloat64CombineInPartialOrder(t *testing.T) {
 
 func TestFloat64Distributor(t *testing.T) {
 	dist := services.NewFloat64Distributor(0, 1*time.Second)
-	dist.Start()
 
 	incoming := make(chan float64, 1)
 	incoming2 := make(chan float64, 1)
@@ -838,6 +837,8 @@ func TestFloat64Distributor(t *testing.T) {
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
+
+	defer dist.Stop()
 
 	dist.Publish(
 

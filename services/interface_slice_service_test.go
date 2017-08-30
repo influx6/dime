@@ -834,7 +834,6 @@ func TestInterfaceSliceCombineInPartialOrder(t *testing.T) {
 
 func TestInterfaceSliceDistributor(t *testing.T) {
 	dist := services.NewInterfaceSliceDistributor(0, 1*time.Second)
-	dist.Start()
 
 	incoming := make(chan []interface{}, 1)
 	incoming2 := make(chan []interface{}, 1)
@@ -843,6 +842,8 @@ func TestInterfaceSliceDistributor(t *testing.T) {
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
+
+	defer dist.Stop()
 
 	dist.Publish(
 

@@ -2,10 +2,30 @@ package impl
 
 import (
 	"io"
+	"os"
 	"time"
 
 	"github.com/influx6/dime/services"
 )
+
+//==========================================================================================================
+
+// WriteStdoutService returns a new instance of a WriteService that uses os.Stdin as reader.
+func WriteStdoutService(buffer int, maxWaitingTime time.Duration) *WriterService {
+	return NewWriterService(buffer, maxWaitingTime, os.Stdout)
+}
+
+// WriteStdinService returns a new instance of a WriteService that uses os.Stdin as reader.
+func WriteStdinService(buffer int, maxWaitingTime time.Duration) *WriterService {
+	return NewWriterService(buffer, maxWaitingTime, os.Stdin)
+}
+
+// WriteStderrService returns a new instance of a WriteService that uses os.Stderr as service.
+func WriteStderrService(buffer int, maxWaitingTime time.Duration) *WriterService {
+	return NewWriterService(buffer, maxWaitingTime, os.Stderr)
+}
+
+//==========================================================================================================
 
 // WriterService implements a dime.MonoByteService for reading from os.Stdin and writing to os.Stdout.
 // It allows us expose the stdout as a stream of continouse bytes to be read and written to.
@@ -38,7 +58,7 @@ func NewWriterService(buffer int, maxWaitingTime time.Duration, w io.Writer) *Wr
 }
 
 // Done returns a channel which will be closed once the service is stopped.
-func (std *WriterService) Done() chan struct{} {
+func (std *WriterService) Done() <-chan struct{} {
 	return std.stopped
 }
 
@@ -47,6 +67,7 @@ func (std *WriterService) Stop() error {
 	close(std.stopped)
 
 	// Clear all pending subscribers.
+	std.pubErrs.CloseAllSubs()
 	std.pubErrs.Clear()
 
 	// Stop subscription delivery.
@@ -83,18 +104,13 @@ func (std *WriterService) lunchPublisher(in <-chan []byte) {
 	}
 }
 
-// ReadErrors returns a channel for reading error information to a listener.
-func (std *WriterService) ReadErrors() <-chan error {
+// WriteErrors returns a channel for reading error information to a listener.
+func (std *WriterService) WriteErrors() <-chan error {
 	mc := make(chan error, 10)
 
 	std.pubErrs.Subscribe(mc)
 
 	return mc
-}
-
-// Read returns a channel for sending information to a listener.
-func (std *WriterService) Read() (<-chan []byte, error) {
-	return nil, ErrNotSupported
 }
 
 // runWriter handles the internal processing of  writing data into provided writer.
@@ -106,6 +122,7 @@ func (std *WriterService) runWriter() {
 				return
 			case data, ok := <-std.incoming:
 				if !ok {
+					std.pubErrs.CloseAllSubs()
 					return
 				}
 

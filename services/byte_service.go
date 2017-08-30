@@ -157,7 +157,7 @@ func ByteView(ctx CancelContext, waitTime time.Duration, viewFn func(byte), in <
 
 // ByteSink defines a function which returns a channel, where the items of the returned channel
 // are to be writting to the incoming channel, till the returned channel is closed which will lead to the
-// closure of the incoming channed.
+// closure of the incoming channed if closeInputAlso flag is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel
 // and was accepted.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -165,7 +165,7 @@ func ByteView(ctx CancelContext, waitTime time.Duration, viewFn func(byte), in <
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func ByteSink(ctx CancelContext, waitTime time.Duration, in chan<- byte) chan<- byte {
+func ByteSink(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, in chan<- byte) chan<- byte {
 	res := make(chan byte, 0)
 
 	go func() {
@@ -175,12 +175,16 @@ func ByteSink(ctx CancelContext, waitTime time.Duration, in chan<- byte) chan<- 
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -231,7 +235,7 @@ func ByteWriterFuncTo(ctx CancelContext, in chan<- byte) ByteDataWriterFunc {
 // ByteSinkFilter defines a function which returns a channel where the items of the returned channel
 // are provided to function which filters incoming values and allows only acceptable values, which is delivered
 // to the incoming channel, till the returned channel is closed by the user and will lead to the closure of the
-// incoming channel as well.
+// incoming channed if closeInputAlso flag is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel
 // and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -239,7 +243,7 @@ func ByteWriterFuncTo(ctx CancelContext, in chan<- byte) ByteDataWriterFunc {
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func ByteSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func(byte) bool, in chan<- byte) chan<- byte {
+func ByteSinkFilter(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, filterFn func(byte) bool, in chan<- byte) chan<- byte {
 	res := make(chan byte, 0)
 
 	go func() {
@@ -249,12 +253,16 @@ func ByteSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func(byt
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -275,7 +283,8 @@ func ByteSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func(byt
 
 // ByteSinkMutate defines a function which returns a channel where the items of the returned channel
 // are provided to function which mutates and returns a new value then which is  delivered to the incoming channel,
-// till the returned channel is closed by the user and will lead to the closure of the incoming channel as well.
+// till the returned channel is closed by the user and will lead to the closure of the incoming channel as well if
+// the closeInputAlso flag is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel
 // and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -283,7 +292,7 @@ func ByteSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func(byt
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func ByteSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(byte) byte, in chan<- byte) chan<- byte {
+func ByteSinkMutate(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, mutateFn func(byte) byte, in chan<- byte) chan<- byte {
 	res := make(chan byte, 0)
 
 	go func() {
@@ -293,12 +302,16 @@ func ByteSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(byt
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -315,7 +328,7 @@ func ByteSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(byt
 
 // ByteSinkView defines a function which returns a channel where the items of the returned channel
 // are provided to function after delivry to incoming channel, till the returned channel is closed by the user
-// and will lead to the closure of the incoming channel as well.
+// and will lead to the closure of the incoming channel as well if the closeInputAlso is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel
 // and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -323,7 +336,7 @@ func ByteSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(byt
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func ByteSinkView(ctx CancelContext, waitTime time.Duration, viewFn func(byte), in chan<- byte) chan<- byte {
+func ByteSinkView(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, viewFn func(byte), in chan<- byte) chan<- byte {
 	res := make(chan byte, 0)
 
 	go func() {
@@ -333,12 +346,16 @@ func ByteSinkView(ctx CancelContext, waitTime time.Duration, viewFn func(byte), 
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -1025,6 +1042,7 @@ type ByteDistributor struct {
 	running             int64
 	messages            chan byte
 	closer              chan struct{}
+	subcloser           chan struct{}
 	clear               chan struct{}
 	subscribers         []chan<- byte
 	newSub              chan chan<- byte
@@ -1037,14 +1055,20 @@ func NewByteDistributor(buffer int, sendWaitBeforeAbort time.Duration) *ByteDist
 		sendWaitBeforeAbort = defaultSendWithBeforeAbort
 	}
 
-	return &ByteDistributor{
+	dist := &ByteDistributor{
 		clear:               make(chan struct{}, 0),
 		closer:              make(chan struct{}, 0),
+		subcloser:           make(chan struct{}, 0),
 		subscribers:         make([]chan<- byte, 0),
 		newSub:              make(chan chan<- byte, 0),
 		messages:            make(chan byte, buffer),
 		sendWaitBeforeAbort: sendWaitBeforeAbort,
 	}
+
+	atomic.AddInt64(&dist.running, 1)
+	go dist.manage()
+
+	return dist
 }
 
 // PublishDeadline sends the message into the distributor to be delivered to all subscribers if it has not
@@ -1098,17 +1122,8 @@ func (d *ByteDistributor) Stop() {
 		return
 	}
 
+	d.subcloser <- struct{}{}
 	d.closer <- struct{}{}
-}
-
-// Start initializes the distributor to deliver messages to subscribers.
-func (d *ByteDistributor) Start() {
-	if atomic.LoadInt64(&d.running) != 0 {
-		return
-	}
-
-	atomic.AddInt64(&d.running, 1)
-	go d.manage()
 }
 
 // manage implements necessary logic to manage message delivery and
@@ -1124,6 +1139,12 @@ func (d *ByteDistributor) manage() {
 		case <-ticker.C:
 			ticker.Reset(1 * time.Second)
 			continue
+		case <-d.subcloser:
+			for _, sub := range d.subscribers {
+				close(sub)
+			}
+
+			d.subscribers = nil
 		case <-d.clear:
 			d.subscribers = nil
 

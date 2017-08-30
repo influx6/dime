@@ -39,7 +39,7 @@ func New{{sel "Name"}}(buffer int, maxWaitingTime time.Duration) *{{sel "Name"}}
 }
 
 // Done returns a channel which will be closed once the service is stopped.
-func (std *{{sel "Name"}}) Done() chan struct{} {
+func (std *{{sel "Name"}}) Done() <-chan struct{} {
 	return std.stopped
 }
 
@@ -47,7 +47,11 @@ func (std *{{sel "Name"}}) Done() chan struct{} {
 func (std *{{sel "Name"}}) Stop() error {
 	close(std.stopped)
 
-	// Clear all pending subscribers.
+	// Close all subscribers.
+	std.pub.CloseAllSubs()
+	std.pubErrs.CloseAllSubs()
+
+	// Clear all subscribers.
 	std.pub.Clear()
 	std.pubErrs.Clear()
 

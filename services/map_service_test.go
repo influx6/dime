@@ -829,7 +829,6 @@ func TestMapCombineInPartialOrder(t *testing.T) {
 
 func TestMapDistributor(t *testing.T) {
 	dist := services.NewMapDistributor(0, 1*time.Second)
-	dist.Start()
 
 	incoming := make(chan map[string]string, 1)
 	incoming2 := make(chan map[string]string, 1)
@@ -838,6 +837,8 @@ func TestMapDistributor(t *testing.T) {
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
+
+	defer dist.Stop()
 
 	dist.Publish(
 

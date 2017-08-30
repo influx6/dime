@@ -829,7 +829,6 @@ func TestBytesCombineInPartialOrder(t *testing.T) {
 
 func TestBytesDistributor(t *testing.T) {
 	dist := services.NewBytesDistributor(0, 1*time.Second)
-	dist.Start()
 
 	incoming := make(chan []byte, 1)
 	incoming2 := make(chan []byte, 1)
@@ -838,6 +837,8 @@ func TestBytesDistributor(t *testing.T) {
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
+
+	defer dist.Stop()
 
 	dist.Publish(
 

@@ -829,7 +829,6 @@ func TestMapOfAnyCombineInPartialOrder(t *testing.T) {
 
 func TestMapOfAnyDistributor(t *testing.T) {
 	dist := services.NewMapOfAnyDistributor(0, 1*time.Second)
-	dist.Start()
 
 	incoming := make(chan map[interface{}]interface{}, 1)
 	incoming2 := make(chan map[interface{}]interface{}, 1)
@@ -838,6 +837,8 @@ func TestMapOfAnyDistributor(t *testing.T) {
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
+
+	defer dist.Stop()
 
 	dist.Publish(
 

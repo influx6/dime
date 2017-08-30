@@ -830,7 +830,6 @@ func TestStringCombineInPartialOrder(t *testing.T) {
 
 func TestStringDistributor(t *testing.T) {
 	dist := services.NewStringDistributor(0, 1*time.Second)
-	dist.Start()
 
 	incoming := make(chan string, 1)
 	incoming2 := make(chan string, 1)
@@ -839,6 +838,8 @@ func TestStringDistributor(t *testing.T) {
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
+
+	defer dist.Stop()
 
 	dist.Publish(
 

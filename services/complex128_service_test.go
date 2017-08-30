@@ -829,7 +829,6 @@ func TestComplex128CombineInPartialOrder(t *testing.T) {
 
 func TestComplex128Distributor(t *testing.T) {
 	dist := services.NewComplex128Distributor(0, 1*time.Second)
-	dist.Start()
 
 	incoming := make(chan complex128, 1)
 	incoming2 := make(chan complex128, 1)
@@ -838,6 +837,8 @@ func TestComplex128Distributor(t *testing.T) {
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
+
+	defer dist.Stop()
 
 	dist.Publish(
 

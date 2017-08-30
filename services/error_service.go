@@ -163,7 +163,7 @@ func ErrorView(ctx CancelContext, waitTime time.Duration, viewFn func(error), in
 
 // ErrorSink defines a function which returns a channel, where the items of the returned channel
 // are to be writting to the incoming channel, till the returned channel is closed which will lead to the
-// closure of the incoming channed.
+// closure of the incoming channed if closeInputAlso flag is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel
 // and was accepted.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -171,7 +171,7 @@ func ErrorView(ctx CancelContext, waitTime time.Duration, viewFn func(error), in
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func ErrorSink(ctx CancelContext, waitTime time.Duration, in chan<- error) chan<- error {
+func ErrorSink(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, in chan<- error) chan<- error {
 	res := make(chan error, 0)
 
 	go func() {
@@ -181,12 +181,16 @@ func ErrorSink(ctx CancelContext, waitTime time.Duration, in chan<- error) chan<
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -237,7 +241,7 @@ func ErrorWriterFuncTo(ctx CancelContext, in chan<- error) ErrorDataWriterFunc {
 // ErrorSinkFilter defines a function which returns a channel where the items of the returned channel
 // are provided to function which filters incoming values and allows only acceptable values, which is delivered
 // to the incoming channel, till the returned channel is closed by the user and will lead to the closure of the
-// incoming channel as well.
+// incoming channed if closeInputAlso flag is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel
 // and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -245,7 +249,7 @@ func ErrorWriterFuncTo(ctx CancelContext, in chan<- error) ErrorDataWriterFunc {
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func ErrorSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func(error) bool, in chan<- error) chan<- error {
+func ErrorSinkFilter(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, filterFn func(error) bool, in chan<- error) chan<- error {
 	res := make(chan error, 0)
 
 	go func() {
@@ -255,12 +259,16 @@ func ErrorSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func(er
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -281,7 +289,8 @@ func ErrorSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func(er
 
 // ErrorSinkMutate defines a function which returns a channel where the items of the returned channel
 // are provided to function which mutates and returns a new value then which is  delivered to the incoming channel,
-// till the returned channel is closed by the user and will lead to the closure of the incoming channel as well.
+// till the returned channel is closed by the user and will lead to the closure of the incoming channel as well if
+// the closeInputAlso flag is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel
 // and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -289,7 +298,7 @@ func ErrorSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func(er
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func ErrorSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(error) error, in chan<- error) chan<- error {
+func ErrorSinkMutate(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, mutateFn func(error) error, in chan<- error) chan<- error {
 	res := make(chan error, 0)
 
 	go func() {
@@ -299,12 +308,16 @@ func ErrorSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(er
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -321,7 +334,7 @@ func ErrorSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(er
 
 // ErrorSinkView defines a function which returns a channel where the items of the returned channel
 // are provided to function after delivry to incoming channel, till the returned channel is closed by the user
-// and will lead to the closure of the incoming channel as well.
+// and will lead to the closure of the incoming channel as well if the closeInputAlso is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel
 // and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -329,7 +342,7 @@ func ErrorSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(er
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func ErrorSinkView(ctx CancelContext, waitTime time.Duration, viewFn func(error), in chan<- error) chan<- error {
+func ErrorSinkView(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, viewFn func(error), in chan<- error) chan<- error {
 	res := make(chan error, 0)
 
 	go func() {
@@ -339,12 +352,16 @@ func ErrorSinkView(ctx CancelContext, waitTime time.Duration, viewFn func(error)
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -1031,6 +1048,7 @@ type ErrorDistributor struct {
 	running             int64
 	messages            chan error
 	closer              chan struct{}
+	subcloser           chan struct{}
 	clear               chan struct{}
 	subscribers         []chan<- error
 	newSub              chan chan<- error
@@ -1043,14 +1061,20 @@ func NewErrorDistributor(buffer int, sendWaitBeforeAbort time.Duration) *ErrorDi
 		sendWaitBeforeAbort = defaultSendWithBeforeAbort
 	}
 
-	return &ErrorDistributor{
+	dist := &ErrorDistributor{
 		clear:               make(chan struct{}, 0),
 		closer:              make(chan struct{}, 0),
+		subcloser:           make(chan struct{}, 0),
 		subscribers:         make([]chan<- error, 0),
 		newSub:              make(chan chan<- error, 0),
 		messages:            make(chan error, buffer),
 		sendWaitBeforeAbort: sendWaitBeforeAbort,
 	}
+
+	atomic.AddInt64(&dist.running, 1)
+	go dist.manage()
+
+	return dist
 }
 
 // PublishDeadline sends the message into the distributor to be delivered to all subscribers if it has not
@@ -1104,17 +1128,8 @@ func (d *ErrorDistributor) Stop() {
 		return
 	}
 
+	d.subcloser <- struct{}{}
 	d.closer <- struct{}{}
-}
-
-// Start initializes the distributor to deliver messages to subscribers.
-func (d *ErrorDistributor) Start() {
-	if atomic.LoadInt64(&d.running) != 0 {
-		return
-	}
-
-	atomic.AddInt64(&d.running, 1)
-	go d.manage()
 }
 
 // manage implements necessary logic to manage message delivery and
@@ -1130,6 +1145,12 @@ func (d *ErrorDistributor) manage() {
 		case <-ticker.C:
 			ticker.Reset(1 * time.Second)
 			continue
+		case <-d.subcloser:
+			for _, sub := range d.subscribers {
+				close(sub)
+			}
+
+			d.subscribers = nil
 		case <-d.clear:
 			d.subscribers = nil
 

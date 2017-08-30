@@ -829,7 +829,6 @@ func TestInt8CombineInPartialOrder(t *testing.T) {
 
 func TestInt8Distributor(t *testing.T) {
 	dist := services.NewInt8Distributor(0, 1*time.Second)
-	dist.Start()
 
 	incoming := make(chan int8, 1)
 	incoming2 := make(chan int8, 1)
@@ -838,6 +837,8 @@ func TestInt8Distributor(t *testing.T) {
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
+
+	defer dist.Stop()
 
 	dist.Publish(
 

@@ -834,7 +834,6 @@ func TestMapOfAnySliceCombineInPartialOrder(t *testing.T) {
 
 func TestMapOfAnySliceDistributor(t *testing.T) {
 	dist := services.NewMapOfAnySliceDistributor(0, 1*time.Second)
-	dist.Start()
 
 	incoming := make(chan []map[interface{}]interface{}, 1)
 	incoming2 := make(chan []map[interface{}]interface{}, 1)
@@ -843,6 +842,8 @@ func TestMapOfAnySliceDistributor(t *testing.T) {
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
+
+	defer dist.Stop()
 
 	dist.Publish(
 

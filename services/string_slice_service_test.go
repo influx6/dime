@@ -835,7 +835,6 @@ func TestStringSliceCombineInPartialOrder(t *testing.T) {
 
 func TestStringSliceDistributor(t *testing.T) {
 	dist := services.NewStringSliceDistributor(0, 1*time.Second)
-	dist.Start()
 
 	incoming := make(chan []string, 1)
 	incoming2 := make(chan []string, 1)
@@ -844,6 +843,8 @@ func TestStringSliceDistributor(t *testing.T) {
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
+
+	defer dist.Stop()
 
 	dist.Publish(
 

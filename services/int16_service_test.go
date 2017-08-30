@@ -829,7 +829,6 @@ func TestInt16CombineInPartialOrder(t *testing.T) {
 
 func TestInt16Distributor(t *testing.T) {
 	dist := services.NewInt16Distributor(0, 1*time.Second)
-	dist.Start()
 
 	incoming := make(chan int16, 1)
 	incoming2 := make(chan int16, 1)
@@ -838,6 +837,8 @@ func TestInt16Distributor(t *testing.T) {
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
+
+	defer dist.Stop()
 
 	dist.Publish(
 

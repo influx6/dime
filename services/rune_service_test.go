@@ -835,7 +835,6 @@ func TestRuneCombineInPartialOrder(t *testing.T) {
 
 func TestRuneDistributor(t *testing.T) {
 	dist := services.NewRuneDistributor(0, 1*time.Second)
-	dist.Start()
 
 	incoming := make(chan rune, 1)
 	incoming2 := make(chan rune, 1)
@@ -844,6 +843,8 @@ func TestRuneDistributor(t *testing.T) {
 	dist.Subscribe(incoming)
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
+
+	defer dist.Stop()
 
 	dist.Publish(
 

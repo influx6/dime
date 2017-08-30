@@ -2730,7 +2730,6 @@ func Test{{sel "Name"}}CombineInPartialOrder(t *testing.T) {
 
 func Test{{sel "Name"}}Distributor(t *testing.T) {
 	dist := services.New{{sel "Name"}}Distributor(0, 1*time.Second)
-	dist.Start()
 
 	incoming := make(chan {{sel "Type"}}, 1)
 	incoming2 := make(chan {{sel "Type"}}, 1)
@@ -2740,6 +2739,7 @@ func Test{{sel "Name"}}Distributor(t *testing.T) {
 	dist.Subscribe(incoming2)
 	dist.Subscribe(incoming3)
 
+	defer dist.Stop()
 	
 	dist.Publish(
 				{{ if eq (sel "Type") "map[interface{}]interface{}" }}

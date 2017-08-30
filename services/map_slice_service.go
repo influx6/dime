@@ -163,7 +163,7 @@ func MapSliceView(ctx CancelContext, waitTime time.Duration, viewFn func([]map[s
 
 // MapSliceSink defines a function which returns a channel, where the items of the returned channel
 // are to be writting to the incoming channel, till the returned channel is closed which will lead to the
-// closure of the incoming channed.
+// closure of the incoming channed if closeInputAlso flag is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel
 // and was accepted.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -171,7 +171,7 @@ func MapSliceView(ctx CancelContext, waitTime time.Duration, viewFn func([]map[s
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func MapSliceSink(ctx CancelContext, waitTime time.Duration, in chan<- []map[string]string) chan<- []map[string]string {
+func MapSliceSink(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, in chan<- []map[string]string) chan<- []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	go func() {
@@ -181,12 +181,16 @@ func MapSliceSink(ctx CancelContext, waitTime time.Duration, in chan<- []map[str
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -237,7 +241,7 @@ func MapSliceWriterFuncTo(ctx CancelContext, in chan<- []map[string]string) MapS
 // MapSliceSinkFilter defines a function which returns a channel where the items of the returned channel
 // are provided to function which filters incoming values and allows only acceptable values, which is delivered
 // to the incoming channel, till the returned channel is closed by the user and will lead to the closure of the
-// incoming channel as well.
+// incoming channed if closeInputAlso flag is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel
 // and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -245,7 +249,7 @@ func MapSliceWriterFuncTo(ctx CancelContext, in chan<- []map[string]string) MapS
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func MapSliceSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]map[string]string) bool, in chan<- []map[string]string) chan<- []map[string]string {
+func MapSliceSinkFilter(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, filterFn func([]map[string]string) bool, in chan<- []map[string]string) chan<- []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	go func() {
@@ -255,12 +259,16 @@ func MapSliceSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -281,7 +289,8 @@ func MapSliceSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func
 
 // MapSliceSinkMutate defines a function which returns a channel where the items of the returned channel
 // are provided to function which mutates and returns a new value then which is  delivered to the incoming channel,
-// till the returned channel is closed by the user and will lead to the closure of the incoming channel as well.
+// till the returned channel is closed by the user and will lead to the closure of the incoming channel as well if
+// the closeInputAlso flag is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel
 // and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -289,7 +298,7 @@ func MapSliceSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func MapSliceSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]map[string]string) []map[string]string, in chan<- []map[string]string) chan<- []map[string]string {
+func MapSliceSinkMutate(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, mutateFn func([]map[string]string) []map[string]string, in chan<- []map[string]string) chan<- []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	go func() {
@@ -299,12 +308,16 @@ func MapSliceSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -321,7 +334,7 @@ func MapSliceSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func
 
 // MapSliceSinkView defines a function which returns a channel where the items of the returned channel
 // are provided to function after delivry to incoming channel, till the returned channel is closed by the user
-// and will lead to the closure of the incoming channel as well.
+// and will lead to the closure of the incoming channel as well if the closeInputAlso is true.
 // This guarantees that whatever the function sees is something which has being written to the incoming channel
 // and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the incoming channel is closed as well.
@@ -329,7 +342,7 @@ func MapSliceSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func
 // Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
 // sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
 // method.
-func MapSliceSinkView(ctx CancelContext, waitTime time.Duration, viewFn func([]map[string]string), in chan<- []map[string]string) chan<- []map[string]string {
+func MapSliceSinkView(ctx CancelContext, closeInputAlso bool, waitTime time.Duration, viewFn func([]map[string]string), in chan<- []map[string]string) chan<- []map[string]string {
 	res := make(chan []map[string]string, 0)
 
 	go func() {
@@ -339,12 +352,16 @@ func MapSliceSinkView(ctx CancelContext, waitTime time.Duration, viewFn func([]m
 		for {
 			select {
 			case <-ctx.Done():
-				close(in)
+				if closeInputAlso {
+					close(in)
+				}
 				return
 
 			case data, ok := <-res:
 				if !ok {
-					close(in)
+					if closeInputAlso {
+						close(in)
+					}
 					return
 				}
 
@@ -1031,6 +1048,7 @@ type MapSliceDistributor struct {
 	running             int64
 	messages            chan []map[string]string
 	closer              chan struct{}
+	subcloser           chan struct{}
 	clear               chan struct{}
 	subscribers         []chan<- []map[string]string
 	newSub              chan chan<- []map[string]string
@@ -1043,14 +1061,20 @@ func NewMapSliceDistributor(buffer int, sendWaitBeforeAbort time.Duration) *MapS
 		sendWaitBeforeAbort = defaultSendWithBeforeAbort
 	}
 
-	return &MapSliceDistributor{
+	dist := &MapSliceDistributor{
 		clear:               make(chan struct{}, 0),
 		closer:              make(chan struct{}, 0),
+		subcloser:           make(chan struct{}, 0),
 		subscribers:         make([]chan<- []map[string]string, 0),
 		newSub:              make(chan chan<- []map[string]string, 0),
 		messages:            make(chan []map[string]string, buffer),
 		sendWaitBeforeAbort: sendWaitBeforeAbort,
 	}
+
+	atomic.AddInt64(&dist.running, 1)
+	go dist.manage()
+
+	return dist
 }
 
 // PublishDeadline sends the message into the distributor to be delivered to all subscribers if it has not
@@ -1104,17 +1128,8 @@ func (d *MapSliceDistributor) Stop() {
 		return
 	}
 
+	d.subcloser <- struct{}{}
 	d.closer <- struct{}{}
-}
-
-// Start initializes the distributor to deliver messages to subscribers.
-func (d *MapSliceDistributor) Start() {
-	if atomic.LoadInt64(&d.running) != 0 {
-		return
-	}
-
-	atomic.AddInt64(&d.running, 1)
-	go d.manage()
 }
 
 // manage implements necessary logic to manage message delivery and
@@ -1130,6 +1145,12 @@ func (d *MapSliceDistributor) manage() {
 		case <-ticker.C:
 			ticker.Reset(1 * time.Second)
 			continue
+		case <-d.subcloser:
+			for _, sub := range d.subscribers {
+				close(sub)
+			}
+
+			d.subscribers = nil
 		case <-d.clear:
 			d.subscribers = nil
 
