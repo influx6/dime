@@ -7,6 +7,10 @@ import (
 
 //go:generate moz generate-file -fromFile ./uint64_slice_service.go -toDir ./impl/uint64slice
 
+// UInt64SliceDataWriterFunc defines a function type which recieves a value to be written and returns true/false
+// if the operation succeeded.
+type UInt64SliceDataWriterFunc func([]uint64) bool
+
 // UInt64SliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of []uint64.
 type UInt64SliceFromByteAdapter func(CancelContext, <-chan []byte) <-chan []uint64
 
@@ -123,7 +127,7 @@ func UInt64SliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(
 // UInt64SliceView defines a function which returns a channel where the items of the incoming channel
 // are provided to function after delivry to output channel, till the provided channel is closed.
 // This guarantees that whatever the function sees is something which has being delivered to the output
-// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
 func UInt64SliceView(ctx CancelContext, waitTime time.Duration, viewFn func([]uint64), in <-chan []uint64) <-chan []uint64 {
@@ -146,6 +150,205 @@ func UInt64SliceView(ctx CancelContext, waitTime time.Duration, viewFn func([]ui
 				}
 
 				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// UInt64SliceSink defines a function which returns a channel, where the items of the returned channel
+// are to be writting to the incoming channel, till the returned channel is closed which will lead to the
+// closure of the incoming channed.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func UInt64SliceSink(ctx CancelContext, waitTime time.Duration, in chan<- []uint64) chan<- []uint64 {
+	res := make(chan []uint64, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- data
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// UInt64SliceWriterFuncToWithin defines a function which recieves a CancelContext, max time.Duration and write channel,
+// to return a function that writes new incoming values and guarantee that the provided value will be delivered to
+// the provided wrie channel while the CancelContext has not expired or the maxAcceptance duration was not exceeded
+// on every call.
+// The returned function returns true/false to signal success write of value.
+func UInt64SliceWriterFuncToWithin(ctx CancelContext, acceptanceMaxWait time.Duration, in chan<- []uint64) UInt64SliceDataWriterFunc {
+	return func(val []uint64) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case in <- val:
+			return true
+		case <-time.After(acceptanceMaxWait):
+			return false
+		}
+	}
+}
+
+// UInt64SliceWriterFuncTo defines a function which recieves a CancelContext and write channel, to
+// return a function that writes new incoming values and guarantee that the provided value will be delivered to
+// the provided wrie channel while the CancelContext has not expired on every call.
+// The returned function returns true/false to signal success write of value.
+func UInt64SliceWriterFuncTo(ctx CancelContext, in chan<- []uint64) UInt64SliceDataWriterFunc {
+	return func(val []uint64) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case in <- val:
+			return true
+		}
+	}
+}
+
+// UInt64SliceSinkFilter defines a function which returns a channel where the items of the returned channel
+// are provided to function which filters incoming values and allows only acceptable values, which is delivered
+// to the incoming channel, till the returned channel is closed by the user and will lead to the closure of the
+// incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func UInt64SliceSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]uint64) bool, in chan<- []uint64) chan<- []uint64 {
+	res := make(chan []uint64, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				if !filterFn(data) {
+					continue
+				}
+
+				in <- data
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// UInt64SliceSinkMutate defines a function which returns a channel where the items of the returned channel
+// are provided to function which mutates and returns a new value then which is  delivered to the incoming channel,
+// till the returned channel is closed by the user and will lead to the closure of the incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func UInt64SliceSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]uint64) []uint64, in chan<- []uint64) chan<- []uint64 {
+	res := make(chan []uint64, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- mutateFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// UInt64SliceSinkView defines a function which returns a channel where the items of the returned channel
+// are provided to function after delivry to incoming channel, till the returned channel is closed by the user
+// and will lead to the closure of the incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func UInt64SliceSinkView(ctx CancelContext, waitTime time.Duration, viewFn func([]uint64), in chan<- []uint64) chan<- []uint64 {
+	res := make(chan []uint64, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- data
 				viewFn(data)
 			case <-t.C:
 				t.Reset(waitTime)
@@ -829,8 +1032,8 @@ type UInt64SliceDistributor struct {
 	messages            chan []uint64
 	closer              chan struct{}
 	clear               chan struct{}
-	subscribers         []chan []uint64
-	newSub              chan chan []uint64
+	subscribers         []chan<- []uint64
+	newSub              chan chan<- []uint64
 	sendWaitBeforeAbort time.Duration
 }
 
@@ -843,8 +1046,8 @@ func NewUInt64SliceDistributor(buffer int, sendWaitBeforeAbort time.Duration) *U
 	return &UInt64SliceDistributor{
 		clear:               make(chan struct{}, 0),
 		closer:              make(chan struct{}, 0),
-		subscribers:         make([]chan []uint64, 0),
-		newSub:              make(chan chan []uint64, 0),
+		subscribers:         make([]chan<- []uint64, 0),
+		newSub:              make(chan chan<- []uint64, 0),
 		messages:            make(chan []uint64, buffer),
 		sendWaitBeforeAbort: sendWaitBeforeAbort,
 	}
@@ -878,7 +1081,7 @@ func (d *UInt64SliceDistributor) Publish(message []uint64) {
 }
 
 // Subscribe adds the channel into the distributor subscription lists.
-func (d *UInt64SliceDistributor) Subscribe(sub chan []uint64) {
+func (d *UInt64SliceDistributor) Subscribe(sub chan<- []uint64) {
 	if atomic.LoadInt64(&d.running) == 0 {
 		return
 	}
@@ -942,7 +1145,7 @@ func (d *UInt64SliceDistributor) manage() {
 			}
 
 			for _, sub := range d.subscribers {
-				go func(c chan []uint64) {
+				go func(c chan<- []uint64) {
 					tick := time.NewTimer(d.sendWaitBeforeAbort)
 					defer tick.Stop()
 

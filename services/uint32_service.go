@@ -7,6 +7,10 @@ import (
 
 //go:generate moz generate-file -fromFile ./uint32_service.go -toDir ./impl/uint32
 
+// UInt32DataWriterFunc defines a function type which recieves a value to be written and returns true/false
+// if the operation succeeded.
+type UInt32DataWriterFunc func(uint32) bool
+
 // UInt32FromByteAdapter defines a function that that will take a channel of bytes and return a channel of uint32.
 type UInt32FromByteAdapter func(CancelContext, <-chan []byte) <-chan uint32
 
@@ -123,7 +127,7 @@ func UInt32Mutate(ctx CancelContext, waitTime time.Duration, mutateFn func(uint3
 // UInt32View defines a function which returns a channel where the items of the incoming channel
 // are provided to function after delivry to output channel, till the provided channel is closed.
 // This guarantees that whatever the function sees is something which has being delivered to the output
-// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
 func UInt32View(ctx CancelContext, waitTime time.Duration, viewFn func(uint32), in <-chan uint32) <-chan uint32 {
@@ -146,6 +150,205 @@ func UInt32View(ctx CancelContext, waitTime time.Duration, viewFn func(uint32), 
 				}
 
 				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// UInt32Sink defines a function which returns a channel, where the items of the returned channel
+// are to be writting to the incoming channel, till the returned channel is closed which will lead to the
+// closure of the incoming channed.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func UInt32Sink(ctx CancelContext, waitTime time.Duration, in chan<- uint32) chan<- uint32 {
+	res := make(chan uint32, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- data
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// UInt32WriterFuncToWithin defines a function which recieves a CancelContext, max time.Duration and write channel,
+// to return a function that writes new incoming values and guarantee that the provided value will be delivered to
+// the provided wrie channel while the CancelContext has not expired or the maxAcceptance duration was not exceeded
+// on every call.
+// The returned function returns true/false to signal success write of value.
+func UInt32WriterFuncToWithin(ctx CancelContext, acceptanceMaxWait time.Duration, in chan<- uint32) UInt32DataWriterFunc {
+	return func(val uint32) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case in <- val:
+			return true
+		case <-time.After(acceptanceMaxWait):
+			return false
+		}
+	}
+}
+
+// UInt32WriterFuncTo defines a function which recieves a CancelContext and write channel, to
+// return a function that writes new incoming values and guarantee that the provided value will be delivered to
+// the provided wrie channel while the CancelContext has not expired on every call.
+// The returned function returns true/false to signal success write of value.
+func UInt32WriterFuncTo(ctx CancelContext, in chan<- uint32) UInt32DataWriterFunc {
+	return func(val uint32) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case in <- val:
+			return true
+		}
+	}
+}
+
+// UInt32SinkFilter defines a function which returns a channel where the items of the returned channel
+// are provided to function which filters incoming values and allows only acceptable values, which is delivered
+// to the incoming channel, till the returned channel is closed by the user and will lead to the closure of the
+// incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func UInt32SinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func(uint32) bool, in chan<- uint32) chan<- uint32 {
+	res := make(chan uint32, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				if !filterFn(data) {
+					continue
+				}
+
+				in <- data
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// UInt32SinkMutate defines a function which returns a channel where the items of the returned channel
+// are provided to function which mutates and returns a new value then which is  delivered to the incoming channel,
+// till the returned channel is closed by the user and will lead to the closure of the incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func UInt32SinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(uint32) uint32, in chan<- uint32) chan<- uint32 {
+	res := make(chan uint32, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- mutateFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// UInt32SinkView defines a function which returns a channel where the items of the returned channel
+// are provided to function after delivry to incoming channel, till the returned channel is closed by the user
+// and will lead to the closure of the incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func UInt32SinkView(ctx CancelContext, waitTime time.Duration, viewFn func(uint32), in chan<- uint32) chan<- uint32 {
+	res := make(chan uint32, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- data
 				viewFn(data)
 			case <-t.C:
 				t.Reset(waitTime)
@@ -829,8 +1032,8 @@ type UInt32Distributor struct {
 	messages            chan uint32
 	closer              chan struct{}
 	clear               chan struct{}
-	subscribers         []chan uint32
-	newSub              chan chan uint32
+	subscribers         []chan<- uint32
+	newSub              chan chan<- uint32
 	sendWaitBeforeAbort time.Duration
 }
 
@@ -843,8 +1046,8 @@ func NewUInt32Distributor(buffer int, sendWaitBeforeAbort time.Duration) *UInt32
 	return &UInt32Distributor{
 		clear:               make(chan struct{}, 0),
 		closer:              make(chan struct{}, 0),
-		subscribers:         make([]chan uint32, 0),
-		newSub:              make(chan chan uint32, 0),
+		subscribers:         make([]chan<- uint32, 0),
+		newSub:              make(chan chan<- uint32, 0),
 		messages:            make(chan uint32, buffer),
 		sendWaitBeforeAbort: sendWaitBeforeAbort,
 	}
@@ -878,7 +1081,7 @@ func (d *UInt32Distributor) Publish(message uint32) {
 }
 
 // Subscribe adds the channel into the distributor subscription lists.
-func (d *UInt32Distributor) Subscribe(sub chan uint32) {
+func (d *UInt32Distributor) Subscribe(sub chan<- uint32) {
 	if atomic.LoadInt64(&d.running) == 0 {
 		return
 	}
@@ -942,7 +1145,7 @@ func (d *UInt32Distributor) manage() {
 			}
 
 			for _, sub := range d.subscribers {
-				go func(c chan uint32) {
+				go func(c chan<- uint32) {
 					tick := time.NewTimer(d.sendWaitBeforeAbort)
 					defer tick.Stop()
 

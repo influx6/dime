@@ -7,6 +7,10 @@ import (
 
 //go:generate moz generate-file -fromFile ./string_service.go -toDir ./impl/string
 
+// StringDataWriterFunc defines a function type which recieves a value to be written and returns true/false
+// if the operation succeeded.
+type StringDataWriterFunc func(string) bool
+
 // StringFromByteAdapter defines a function that that will take a channel of bytes and return a channel of string.
 type StringFromByteAdapter func(CancelContext, <-chan []byte) <-chan string
 
@@ -123,7 +127,7 @@ func StringMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(strin
 // StringView defines a function which returns a channel where the items of the incoming channel
 // are provided to function after delivry to output channel, till the provided channel is closed.
 // This guarantees that whatever the function sees is something which has being delivered to the output
-// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
 func StringView(ctx CancelContext, waitTime time.Duration, viewFn func(string), in <-chan string) <-chan string {
@@ -146,6 +150,205 @@ func StringView(ctx CancelContext, waitTime time.Duration, viewFn func(string), 
 				}
 
 				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// StringSink defines a function which returns a channel, where the items of the returned channel
+// are to be writting to the incoming channel, till the returned channel is closed which will lead to the
+// closure of the incoming channed.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func StringSink(ctx CancelContext, waitTime time.Duration, in chan<- string) chan<- string {
+	res := make(chan string, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- data
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// StringWriterFuncToWithin defines a function which recieves a CancelContext, max time.Duration and write channel,
+// to return a function that writes new incoming values and guarantee that the provided value will be delivered to
+// the provided wrie channel while the CancelContext has not expired or the maxAcceptance duration was not exceeded
+// on every call.
+// The returned function returns true/false to signal success write of value.
+func StringWriterFuncToWithin(ctx CancelContext, acceptanceMaxWait time.Duration, in chan<- string) StringDataWriterFunc {
+	return func(val string) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case in <- val:
+			return true
+		case <-time.After(acceptanceMaxWait):
+			return false
+		}
+	}
+}
+
+// StringWriterFuncTo defines a function which recieves a CancelContext and write channel, to
+// return a function that writes new incoming values and guarantee that the provided value will be delivered to
+// the provided wrie channel while the CancelContext has not expired on every call.
+// The returned function returns true/false to signal success write of value.
+func StringWriterFuncTo(ctx CancelContext, in chan<- string) StringDataWriterFunc {
+	return func(val string) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case in <- val:
+			return true
+		}
+	}
+}
+
+// StringSinkFilter defines a function which returns a channel where the items of the returned channel
+// are provided to function which filters incoming values and allows only acceptable values, which is delivered
+// to the incoming channel, till the returned channel is closed by the user and will lead to the closure of the
+// incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func StringSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func(string) bool, in chan<- string) chan<- string {
+	res := make(chan string, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				if !filterFn(data) {
+					continue
+				}
+
+				in <- data
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// StringSinkMutate defines a function which returns a channel where the items of the returned channel
+// are provided to function which mutates and returns a new value then which is  delivered to the incoming channel,
+// till the returned channel is closed by the user and will lead to the closure of the incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func StringSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(string) string, in chan<- string) chan<- string {
+	res := make(chan string, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- mutateFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// StringSinkView defines a function which returns a channel where the items of the returned channel
+// are provided to function after delivry to incoming channel, till the returned channel is closed by the user
+// and will lead to the closure of the incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func StringSinkView(ctx CancelContext, waitTime time.Duration, viewFn func(string), in chan<- string) chan<- string {
+	res := make(chan string, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- data
 				viewFn(data)
 			case <-t.C:
 				t.Reset(waitTime)
@@ -829,8 +1032,8 @@ type StringDistributor struct {
 	messages            chan string
 	closer              chan struct{}
 	clear               chan struct{}
-	subscribers         []chan string
-	newSub              chan chan string
+	subscribers         []chan<- string
+	newSub              chan chan<- string
 	sendWaitBeforeAbort time.Duration
 }
 
@@ -843,8 +1046,8 @@ func NewStringDistributor(buffer int, sendWaitBeforeAbort time.Duration) *String
 	return &StringDistributor{
 		clear:               make(chan struct{}, 0),
 		closer:              make(chan struct{}, 0),
-		subscribers:         make([]chan string, 0),
-		newSub:              make(chan chan string, 0),
+		subscribers:         make([]chan<- string, 0),
+		newSub:              make(chan chan<- string, 0),
 		messages:            make(chan string, buffer),
 		sendWaitBeforeAbort: sendWaitBeforeAbort,
 	}
@@ -878,7 +1081,7 @@ func (d *StringDistributor) Publish(message string) {
 }
 
 // Subscribe adds the channel into the distributor subscription lists.
-func (d *StringDistributor) Subscribe(sub chan string) {
+func (d *StringDistributor) Subscribe(sub chan<- string) {
 	if atomic.LoadInt64(&d.running) == 0 {
 		return
 	}
@@ -942,7 +1145,7 @@ func (d *StringDistributor) manage() {
 			}
 
 			for _, sub := range d.subscribers {
-				go func(c chan string) {
+				go func(c chan<- string) {
 					tick := time.NewTimer(d.sendWaitBeforeAbort)
 					defer tick.Stop()
 

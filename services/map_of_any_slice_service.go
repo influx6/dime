@@ -7,6 +7,10 @@ import (
 
 //go:generate moz generate-file -fromFile ./map_of_any_slice_service.go -toDir ./impl/mapofanyslice
 
+// MapOfAnySliceDataWriterFunc defines a function type which recieves a value to be written and returns true/false
+// if the operation succeeded.
+type MapOfAnySliceDataWriterFunc func([]map[interface{}]interface{}) bool
+
 // MapOfAnySliceFromByteAdapter defines a function that that will take a channel of bytes and return a channel of []map[interface{}]interface{}.
 type MapOfAnySliceFromByteAdapter func(CancelContext, <-chan []byte) <-chan []map[interface{}]interface{}
 
@@ -123,7 +127,7 @@ func MapOfAnySliceMutate(ctx CancelContext, waitTime time.Duration, mutateFn fun
 // MapOfAnySliceView defines a function which returns a channel where the items of the incoming channel
 // are provided to function after delivry to output channel, till the provided channel is closed.
 // This guarantees that whatever the function sees is something which has being delivered to the output
-// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
 func MapOfAnySliceView(ctx CancelContext, waitTime time.Duration, viewFn func([]map[interface{}]interface{}), in <-chan []map[interface{}]interface{}) <-chan []map[interface{}]interface{} {
@@ -146,6 +150,205 @@ func MapOfAnySliceView(ctx CancelContext, waitTime time.Duration, viewFn func([]
 				}
 
 				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// MapOfAnySliceSink defines a function which returns a channel, where the items of the returned channel
+// are to be writting to the incoming channel, till the returned channel is closed which will lead to the
+// closure of the incoming channed.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func MapOfAnySliceSink(ctx CancelContext, waitTime time.Duration, in chan<- []map[interface{}]interface{}) chan<- []map[interface{}]interface{} {
+	res := make(chan []map[interface{}]interface{}, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- data
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// MapOfAnySliceWriterFuncToWithin defines a function which recieves a CancelContext, max time.Duration and write channel,
+// to return a function that writes new incoming values and guarantee that the provided value will be delivered to
+// the provided wrie channel while the CancelContext has not expired or the maxAcceptance duration was not exceeded
+// on every call.
+// The returned function returns true/false to signal success write of value.
+func MapOfAnySliceWriterFuncToWithin(ctx CancelContext, acceptanceMaxWait time.Duration, in chan<- []map[interface{}]interface{}) MapOfAnySliceDataWriterFunc {
+	return func(val []map[interface{}]interface{}) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case in <- val:
+			return true
+		case <-time.After(acceptanceMaxWait):
+			return false
+		}
+	}
+}
+
+// MapOfAnySliceWriterFuncTo defines a function which recieves a CancelContext and write channel, to
+// return a function that writes new incoming values and guarantee that the provided value will be delivered to
+// the provided wrie channel while the CancelContext has not expired on every call.
+// The returned function returns true/false to signal success write of value.
+func MapOfAnySliceWriterFuncTo(ctx CancelContext, in chan<- []map[interface{}]interface{}) MapOfAnySliceDataWriterFunc {
+	return func(val []map[interface{}]interface{}) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case in <- val:
+			return true
+		}
+	}
+}
+
+// MapOfAnySliceSinkFilter defines a function which returns a channel where the items of the returned channel
+// are provided to function which filters incoming values and allows only acceptable values, which is delivered
+// to the incoming channel, till the returned channel is closed by the user and will lead to the closure of the
+// incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func MapOfAnySliceSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func([]map[interface{}]interface{}) bool, in chan<- []map[interface{}]interface{}) chan<- []map[interface{}]interface{} {
+	res := make(chan []map[interface{}]interface{}, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				if !filterFn(data) {
+					continue
+				}
+
+				in <- data
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// MapOfAnySliceSinkMutate defines a function which returns a channel where the items of the returned channel
+// are provided to function which mutates and returns a new value then which is  delivered to the incoming channel,
+// till the returned channel is closed by the user and will lead to the closure of the incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func MapOfAnySliceSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func([]map[interface{}]interface{}) []map[interface{}]interface{}, in chan<- []map[interface{}]interface{}) chan<- []map[interface{}]interface{} {
+	res := make(chan []map[interface{}]interface{}, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- mutateFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// MapOfAnySliceSinkView defines a function which returns a channel where the items of the returned channel
+// are provided to function after delivry to incoming channel, till the returned channel is closed by the user
+// and will lead to the closure of the incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func MapOfAnySliceSinkView(ctx CancelContext, waitTime time.Duration, viewFn func([]map[interface{}]interface{}), in chan<- []map[interface{}]interface{}) chan<- []map[interface{}]interface{} {
+	res := make(chan []map[interface{}]interface{}, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- data
 				viewFn(data)
 			case <-t.C:
 				t.Reset(waitTime)
@@ -829,8 +1032,8 @@ type MapOfAnySliceDistributor struct {
 	messages            chan []map[interface{}]interface{}
 	closer              chan struct{}
 	clear               chan struct{}
-	subscribers         []chan []map[interface{}]interface{}
-	newSub              chan chan []map[interface{}]interface{}
+	subscribers         []chan<- []map[interface{}]interface{}
+	newSub              chan chan<- []map[interface{}]interface{}
 	sendWaitBeforeAbort time.Duration
 }
 
@@ -843,8 +1046,8 @@ func NewMapOfAnySliceDistributor(buffer int, sendWaitBeforeAbort time.Duration) 
 	return &MapOfAnySliceDistributor{
 		clear:               make(chan struct{}, 0),
 		closer:              make(chan struct{}, 0),
-		subscribers:         make([]chan []map[interface{}]interface{}, 0),
-		newSub:              make(chan chan []map[interface{}]interface{}, 0),
+		subscribers:         make([]chan<- []map[interface{}]interface{}, 0),
+		newSub:              make(chan chan<- []map[interface{}]interface{}, 0),
 		messages:            make(chan []map[interface{}]interface{}, buffer),
 		sendWaitBeforeAbort: sendWaitBeforeAbort,
 	}
@@ -878,7 +1081,7 @@ func (d *MapOfAnySliceDistributor) Publish(message []map[interface{}]interface{}
 }
 
 // Subscribe adds the channel into the distributor subscription lists.
-func (d *MapOfAnySliceDistributor) Subscribe(sub chan []map[interface{}]interface{}) {
+func (d *MapOfAnySliceDistributor) Subscribe(sub chan<- []map[interface{}]interface{}) {
 	if atomic.LoadInt64(&d.running) == 0 {
 		return
 	}
@@ -942,7 +1145,7 @@ func (d *MapOfAnySliceDistributor) manage() {
 			}
 
 			for _, sub := range d.subscribers {
-				go func(c chan []map[interface{}]interface{}) {
+				go func(c chan<- []map[interface{}]interface{}) {
 					tick := time.NewTimer(d.sendWaitBeforeAbort)
 					defer tick.Stop()
 

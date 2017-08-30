@@ -7,6 +7,10 @@ import (
 
 //go:generate moz generate-file -fromFile ./map_service.go -toDir ./impl/map
 
+// MapDataWriterFunc defines a function type which recieves a value to be written and returns true/false
+// if the operation succeeded.
+type MapDataWriterFunc func(map[string]string) bool
+
 // MapFromByteAdapter defines a function that that will take a channel of bytes and return a channel of map[string]string.
 type MapFromByteAdapter func(CancelContext, <-chan []byte) <-chan map[string]string
 
@@ -123,7 +127,7 @@ func MapMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(map[stri
 // MapView defines a function which returns a channel where the items of the incoming channel
 // are provided to function after delivry to output channel, till the provided channel is closed.
 // This guarantees that whatever the function sees is something which has being delivered to the output
-// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
 func MapView(ctx CancelContext, waitTime time.Duration, viewFn func(map[string]string), in <-chan map[string]string) <-chan map[string]string {
@@ -146,6 +150,205 @@ func MapView(ctx CancelContext, waitTime time.Duration, viewFn func(map[string]s
 				}
 
 				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// MapSink defines a function which returns a channel, where the items of the returned channel
+// are to be writting to the incoming channel, till the returned channel is closed which will lead to the
+// closure of the incoming channed.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func MapSink(ctx CancelContext, waitTime time.Duration, in chan<- map[string]string) chan<- map[string]string {
+	res := make(chan map[string]string, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- data
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// MapWriterFuncToWithin defines a function which recieves a CancelContext, max time.Duration and write channel,
+// to return a function that writes new incoming values and guarantee that the provided value will be delivered to
+// the provided wrie channel while the CancelContext has not expired or the maxAcceptance duration was not exceeded
+// on every call.
+// The returned function returns true/false to signal success write of value.
+func MapWriterFuncToWithin(ctx CancelContext, acceptanceMaxWait time.Duration, in chan<- map[string]string) MapDataWriterFunc {
+	return func(val map[string]string) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case in <- val:
+			return true
+		case <-time.After(acceptanceMaxWait):
+			return false
+		}
+	}
+}
+
+// MapWriterFuncTo defines a function which recieves a CancelContext and write channel, to
+// return a function that writes new incoming values and guarantee that the provided value will be delivered to
+// the provided wrie channel while the CancelContext has not expired on every call.
+// The returned function returns true/false to signal success write of value.
+func MapWriterFuncTo(ctx CancelContext, in chan<- map[string]string) MapDataWriterFunc {
+	return func(val map[string]string) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case in <- val:
+			return true
+		}
+	}
+}
+
+// MapSinkFilter defines a function which returns a channel where the items of the returned channel
+// are provided to function which filters incoming values and allows only acceptable values, which is delivered
+// to the incoming channel, till the returned channel is closed by the user and will lead to the closure of the
+// incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func MapSinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func(map[string]string) bool, in chan<- map[string]string) chan<- map[string]string {
+	res := make(chan map[string]string, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				if !filterFn(data) {
+					continue
+				}
+
+				in <- data
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// MapSinkMutate defines a function which returns a channel where the items of the returned channel
+// are provided to function which mutates and returns a new value then which is  delivered to the incoming channel,
+// till the returned channel is closed by the user and will lead to the closure of the incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func MapSinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(map[string]string) map[string]string, in chan<- map[string]string) chan<- map[string]string {
+	res := make(chan map[string]string, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- mutateFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// MapSinkView defines a function which returns a channel where the items of the returned channel
+// are provided to function after delivry to incoming channel, till the returned channel is closed by the user
+// and will lead to the closure of the incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func MapSinkView(ctx CancelContext, waitTime time.Duration, viewFn func(map[string]string), in chan<- map[string]string) chan<- map[string]string {
+	res := make(chan map[string]string, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- data
 				viewFn(data)
 			case <-t.C:
 				t.Reset(waitTime)
@@ -829,8 +1032,8 @@ type MapDistributor struct {
 	messages            chan map[string]string
 	closer              chan struct{}
 	clear               chan struct{}
-	subscribers         []chan map[string]string
-	newSub              chan chan map[string]string
+	subscribers         []chan<- map[string]string
+	newSub              chan chan<- map[string]string
 	sendWaitBeforeAbort time.Duration
 }
 
@@ -843,8 +1046,8 @@ func NewMapDistributor(buffer int, sendWaitBeforeAbort time.Duration) *MapDistri
 	return &MapDistributor{
 		clear:               make(chan struct{}, 0),
 		closer:              make(chan struct{}, 0),
-		subscribers:         make([]chan map[string]string, 0),
-		newSub:              make(chan chan map[string]string, 0),
+		subscribers:         make([]chan<- map[string]string, 0),
+		newSub:              make(chan chan<- map[string]string, 0),
 		messages:            make(chan map[string]string, buffer),
 		sendWaitBeforeAbort: sendWaitBeforeAbort,
 	}
@@ -878,7 +1081,7 @@ func (d *MapDistributor) Publish(message map[string]string) {
 }
 
 // Subscribe adds the channel into the distributor subscription lists.
-func (d *MapDistributor) Subscribe(sub chan map[string]string) {
+func (d *MapDistributor) Subscribe(sub chan<- map[string]string) {
 	if atomic.LoadInt64(&d.running) == 0 {
 		return
 	}
@@ -942,7 +1145,7 @@ func (d *MapDistributor) manage() {
 			}
 
 			for _, sub := range d.subscribers {
-				go func(c chan map[string]string) {
+				go func(c chan<- map[string]string) {
 					tick := time.NewTimer(d.sendWaitBeforeAbort)
 					defer tick.Stop()
 

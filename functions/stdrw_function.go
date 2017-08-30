@@ -95,6 +95,9 @@ func MetricByteFunctorFunction(id string, m metrics.Metrics, fx ByteFunction) By
 				}))
 			}, in)
 
+			// outView := make(chan []byte)
+			// errView := make(chan error)
+
 			fx(ctx, inView, out, errs)
 		}
 	}

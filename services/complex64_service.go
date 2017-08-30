@@ -7,6 +7,10 @@ import (
 
 //go:generate moz generate-file -fromFile ./complex64_service.go -toDir ./impl/complex64
 
+// Complex64DataWriterFunc defines a function type which recieves a value to be written and returns true/false
+// if the operation succeeded.
+type Complex64DataWriterFunc func(complex64) bool
+
 // Complex64FromByteAdapter defines a function that that will take a channel of bytes and return a channel of complex64.
 type Complex64FromByteAdapter func(CancelContext, <-chan []byte) <-chan complex64
 
@@ -123,7 +127,7 @@ func Complex64Mutate(ctx CancelContext, waitTime time.Duration, mutateFn func(co
 // Complex64View defines a function which returns a channel where the items of the incoming channel
 // are provided to function after delivry to output channel, till the provided channel is closed.
 // This guarantees that whatever the function sees is something which has being delivered to the output
-// and was accepting. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
 // If the given channel is closed or if the context expires, the returning channel is closed as well.
 // This function guarantees complete data.
 func Complex64View(ctx CancelContext, waitTime time.Duration, viewFn func(complex64), in <-chan complex64) <-chan complex64 {
@@ -146,6 +150,205 @@ func Complex64View(ctx CancelContext, waitTime time.Duration, viewFn func(comple
 				}
 
 				res <- data
+				viewFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// Complex64Sink defines a function which returns a channel, where the items of the returned channel
+// are to be writting to the incoming channel, till the returned channel is closed which will lead to the
+// closure of the incoming channed.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func Complex64Sink(ctx CancelContext, waitTime time.Duration, in chan<- complex64) chan<- complex64 {
+	res := make(chan complex64, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- data
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// Complex64WriterFuncToWithin defines a function which recieves a CancelContext, max time.Duration and write channel,
+// to return a function that writes new incoming values and guarantee that the provided value will be delivered to
+// the provided wrie channel while the CancelContext has not expired or the maxAcceptance duration was not exceeded
+// on every call.
+// The returned function returns true/false to signal success write of value.
+func Complex64WriterFuncToWithin(ctx CancelContext, acceptanceMaxWait time.Duration, in chan<- complex64) Complex64DataWriterFunc {
+	return func(val complex64) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case in <- val:
+			return true
+		case <-time.After(acceptanceMaxWait):
+			return false
+		}
+	}
+}
+
+// Complex64WriterFuncTo defines a function which recieves a CancelContext and write channel, to
+// return a function that writes new incoming values and guarantee that the provided value will be delivered to
+// the provided wrie channel while the CancelContext has not expired on every call.
+// The returned function returns true/false to signal success write of value.
+func Complex64WriterFuncTo(ctx CancelContext, in chan<- complex64) Complex64DataWriterFunc {
+	return func(val complex64) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case in <- val:
+			return true
+		}
+	}
+}
+
+// Complex64SinkFilter defines a function which returns a channel where the items of the returned channel
+// are provided to function which filters incoming values and allows only acceptable values, which is delivered
+// to the incoming channel, till the returned channel is closed by the user and will lead to the closure of the
+// incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func Complex64SinkFilter(ctx CancelContext, waitTime time.Duration, filterFn func(complex64) bool, in chan<- complex64) chan<- complex64 {
+	res := make(chan complex64, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				if !filterFn(data) {
+					continue
+				}
+
+				in <- data
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// Complex64SinkMutate defines a function which returns a channel where the items of the returned channel
+// are provided to function which mutates and returns a new value then which is  delivered to the incoming channel,
+// till the returned channel is closed by the user and will lead to the closure of the incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func Complex64SinkMutate(ctx CancelContext, waitTime time.Duration, mutateFn func(complex64) complex64, in chan<- complex64) chan<- complex64 {
+	res := make(chan complex64, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- mutateFn(data)
+			case <-t.C:
+				t.Reset(waitTime)
+				continue
+			}
+		}
+	}()
+
+	return res
+}
+
+// Complex64SinkView defines a function which returns a channel where the items of the returned channel
+// are provided to function after delivry to incoming channel, till the returned channel is closed by the user
+// and will lead to the closure of the incoming channel as well.
+// This guarantees that whatever the function sees is something which has being written to the incoming channel
+// and was accepted. Also, receiving function must be careful not to modify incoming value or do so cautiously.
+// If the given channel is closed or if the context expires, the incoming channel is closed as well.
+// This function guarantees complete data.
+// Extreme care must be taking by the user of the returned channel to do a select on with the CancelContext has he/she/it
+// sends data into the returned channel to ensure that it is closed and stopped once context has expired by it's Done()
+// method.
+func Complex64SinkView(ctx CancelContext, waitTime time.Duration, viewFn func(complex64), in chan<- complex64) chan<- complex64 {
+	res := make(chan complex64, 0)
+
+	go func() {
+		t := time.NewTimer(waitTime)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+
+			case data, ok := <-res:
+				if !ok {
+					close(in)
+					return
+				}
+
+				in <- data
 				viewFn(data)
 			case <-t.C:
 				t.Reset(waitTime)
@@ -829,8 +1032,8 @@ type Complex64Distributor struct {
 	messages            chan complex64
 	closer              chan struct{}
 	clear               chan struct{}
-	subscribers         []chan complex64
-	newSub              chan chan complex64
+	subscribers         []chan<- complex64
+	newSub              chan chan<- complex64
 	sendWaitBeforeAbort time.Duration
 }
 
@@ -843,8 +1046,8 @@ func NewComplex64Distributor(buffer int, sendWaitBeforeAbort time.Duration) *Com
 	return &Complex64Distributor{
 		clear:               make(chan struct{}, 0),
 		closer:              make(chan struct{}, 0),
-		subscribers:         make([]chan complex64, 0),
-		newSub:              make(chan chan complex64, 0),
+		subscribers:         make([]chan<- complex64, 0),
+		newSub:              make(chan chan<- complex64, 0),
 		messages:            make(chan complex64, buffer),
 		sendWaitBeforeAbort: sendWaitBeforeAbort,
 	}
@@ -878,7 +1081,7 @@ func (d *Complex64Distributor) Publish(message complex64) {
 }
 
 // Subscribe adds the channel into the distributor subscription lists.
-func (d *Complex64Distributor) Subscribe(sub chan complex64) {
+func (d *Complex64Distributor) Subscribe(sub chan<- complex64) {
 	if atomic.LoadInt64(&d.running) == 0 {
 		return
 	}
@@ -942,7 +1145,7 @@ func (d *Complex64Distributor) manage() {
 			}
 
 			for _, sub := range d.subscribers {
-				go func(c chan complex64) {
+				go func(c chan<- complex64) {
 					tick := time.NewTimer(d.sendWaitBeforeAbort)
 					defer tick.Stop()
 
