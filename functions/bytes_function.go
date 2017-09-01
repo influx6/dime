@@ -28,25 +28,27 @@ type ByteFunction func(services.CancelContext, <-chan []byte, chan<- []byte, <-c
 
 // LaunchStdFunction returns a ByteFunctor instance which processing data coming from stdin
 // and receiving both data and error into stdout and stderr appropriately.
-func LaunchStdFunction(ctx services.CancelContext, maxTimeToAbortReply time.Duration, bx ByteFunction) error {
-	reader := impl.ReadStdinService(0, maxTimeToAbortReply)
-	writer := impl.WriteSingleStdoutService(0, maxTimeToAbortReply)
+func LaunchStdFunction(ctx services.CancelContext, bufferSize int, maxTimeToAbortReply time.Duration, bx ByteFunction) error {
+	reader := impl.ReadStdinService(bufferSize, maxTimeToAbortReply)
+	writer := impl.WriteSingleStdoutService(bufferSize, maxTimeToAbortReply)
 
-	defer reader.Stop()
-	defer writer.Stop()
+	if err := launchFunction(ctx, bx, reader, writer); err != nil {
+		return err
+	}
 
-	return launchFunction(ctx, bx, reader, writer)
+	return nil
 }
 
 // LaunchReaderWriterFunction returns a new instance of a ByteFunctor using the associated reader and writers.
-func LaunchReaderWriterFunction(ctx services.CancelContext, reader io.Reader, outw io.Writer, bx ByteFunction) error {
-	rw := impl.NewReaderService(0, defaultWaitForSending, reader)
-	ww := impl.NewSingleWriterService(0, defaultWaitForSending, outw)
+func LaunchReaderWriterFunction(ctx services.CancelContext, bufferSize int, reader io.Reader, writer io.Writer, bx ByteFunction) error {
+	rw := impl.NewReaderService(bufferSize, defaultWaitForSending, reader)
+	ww := impl.NewSingleWriterService(bufferSize, defaultWaitForSending, writer)
 
-	defer rw.Stop()
-	defer ww.Stop()
+	if err := launchFunction(ctx, bx, rw, ww); err != nil {
+		return err
+	}
 
-	return launchFunction(ctx, bx, rw, ww)
+	return nil
 }
 
 func launchFunction(ctx services.CancelContext, bx ByteFunction, requestReader, responseWriter services.MonoBytesService) error {
@@ -57,13 +59,14 @@ func launchFunction(ctx services.CancelContext, bx ByteFunction, requestReader, 
 
 	output := make(chan []byte)
 
-	defer close(output)
-
 	if err := responseWriter.Write(output); err != nil {
 		return err
 	}
 
 	bx(ctx, incoming, output, requestReader.ReadErrors())
+
+	<-requestReader.Done()
+	<-responseWriter.Done()
 
 	return nil
 }

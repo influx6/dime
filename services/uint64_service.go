@@ -1,6 +1,7 @@
 package services
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -1045,30 +1046,27 @@ func UInt64CombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders 
 // to deliver will be cancelled, this ensures that we do not leak goroutines nor
 // have eternal channel blocks.
 type UInt64Distributor struct {
-	running             int64
-	messages            chan uint64
-	closer              chan struct{}
-	subcloser           chan struct{}
-	clear               chan struct{}
-	subscribers         []chan<- uint64
-	newSub              chan chan<- uint64
-	sendWaitBeforeAbort time.Duration
+	running     int64
+	messages    chan uint64
+	closer      chan struct{}
+	subcloser   chan struct{}
+	clear       chan struct{}
+	receivers   sync.WaitGroup
+	subscribers []chan<- uint64
+	newSub      chan chan<- uint64
+	// sendWaitBeforeAbort time.Duration
+
 }
 
 // NewUInt64Distributor returns a new instance of a UInt64Distributor.
-func NewUInt64Distributor(buffer int, sendWaitBeforeAbort time.Duration) *UInt64Distributor {
-	if sendWaitBeforeAbort <= 0 {
-		sendWaitBeforeAbort = defaultSendWithBeforeAbort
-	}
-
+func NewUInt64Distributor(buffer int) *UInt64Distributor {
 	dist := &UInt64Distributor{
-		clear:               make(chan struct{}, 0),
-		closer:              make(chan struct{}, 0),
-		subcloser:           make(chan struct{}, 0),
-		subscribers:         make([]chan<- uint64, 0),
-		newSub:              make(chan chan<- uint64, 0),
-		messages:            make(chan uint64, buffer),
-		sendWaitBeforeAbort: sendWaitBeforeAbort,
+		clear:       make(chan struct{}, 0),
+		closer:      make(chan struct{}, 0),
+		subcloser:   make(chan struct{}, 0),
+		subscribers: make([]chan<- uint64, 0),
+		newSub:      make(chan chan<- uint64, 0),
+		messages:    make(chan uint64, buffer),
 	}
 
 	atomic.AddInt64(&dist.running, 1)
@@ -1128,8 +1126,14 @@ func (d *UInt64Distributor) Stop() {
 		return
 	}
 
-	d.subcloser <- struct{}{}
 	d.closer <- struct{}{}
+
+	d.receivers.Wait()
+
+	for _, sub := range d.subscribers {
+		close(sub)
+	}
+
 }
 
 // manage implements necessary logic to manage message delivery and
@@ -1145,12 +1149,7 @@ func (d *UInt64Distributor) manage() {
 		case <-ticker.C:
 			ticker.Reset(1 * time.Second)
 			continue
-		case <-d.subcloser:
-			for _, sub := range d.subscribers {
-				close(sub)
-			}
 
-			d.subscribers = nil
 		case <-d.clear:
 			d.subscribers = nil
 
@@ -1160,25 +1159,27 @@ func (d *UInt64Distributor) manage() {
 			}
 
 			d.subscribers = append(d.subscribers, newSub)
+
 		case message, ok := <-d.messages:
 			if !ok {
 				return
 			}
 
 			for _, sub := range d.subscribers {
-				go func(c chan<- uint64) {
-					tick := time.NewTimer(d.sendWaitBeforeAbort)
-					defer tick.Stop()
+				d.receivers.Add(1)
 
+				go func(c chan<- uint64) {
+					defer d.receivers.Done()
 					select {
-					case c <- message:
+					case <-d.subcloser:
 						return
-					case <-tick.C:
+					case c <- message:
 						return
 					}
 				}(sub)
 			}
 		case <-d.closer:
+			close(d.subcloser)
 			return
 		}
 	}

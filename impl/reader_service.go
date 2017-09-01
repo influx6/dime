@@ -38,25 +38,29 @@ type ReaderService struct {
 	reader      io.Reader
 	maxBuffSize int
 	stopped     chan struct{}
+	done        chan struct{}
 	incoming    chan []byte
+	wg          sync.WaitGroup
 	rw          sync.Mutex
 	closed      bool
 }
 
 // NewReaderService returns a new instance of a StdOutService.
 func NewReaderService(maxReadBufferSize int, maxWaitingTime time.Duration, reader io.Reader) *ReaderService {
-	pub := services.NewBytesDistributor(0, maxWaitingTime)
-	pubErr := services.NewErrorDistributor(0, maxWaitingTime)
+	pub := services.NewBytesDistributor(0)
+	pubErr := services.NewErrorDistributor(0)
 
 	stdServ := ReaderService{
 		pub:         pub,
 		pubErrs:     pubErr,
 		reader:      reader,
 		maxBuffSize: maxReadBufferSize,
+		done:        make(chan struct{}, 0),
 		stopped:     make(chan struct{}, 0),
 		incoming:    make(chan []byte, 0),
 	}
 
+	stdServ.wg.Add(1)
 	go stdServ.runReader()
 
 	return &stdServ
@@ -64,7 +68,7 @@ func NewReaderService(maxReadBufferSize int, maxWaitingTime time.Duration, reade
 
 // Done returns a channel which will be closed once the service is stopped.
 func (std *ReaderService) Done() <-chan struct{} {
-	return std.stopped
+	return std.done
 }
 
 // Stop ends all operations of the service.
@@ -78,11 +82,14 @@ func (std *ReaderService) Stop() error {
 
 	close(std.stopped)
 
+	std.wg.Wait()
+
 	// Stop subscription delivery.
 	std.pub.Stop()
 	std.pubErrs.Stop()
 
 	std.closed = true
+	close(std.done)
 
 	return nil
 }
@@ -112,6 +119,8 @@ func (std *ReaderService) Read() (<-chan []byte, error) {
 
 // runReader reads continously from the reader provider till io.EOF.
 func (std *ReaderService) runReader() {
+	defer std.wg.Done()
+
 	reader := bufio.NewReader(std.reader)
 
 	t := time.NewTimer(readerCloseCheckDuration)
@@ -130,9 +139,11 @@ func (std *ReaderService) runReader() {
 
 			buf := make([]byte, std.maxBuffSize)
 
-			_, err := reader.Read(buf)
+			n, err := reader.Read(buf)
 			if err != nil {
 				std.pubErrs.PublishDeadline(err, errorWriteAcceptTimeout)
+
+				buf = buf[:n]
 
 				if err == io.EOF {
 					if len(buf) != 0 {
@@ -146,7 +157,11 @@ func (std *ReaderService) runReader() {
 				continue
 			}
 
-			std.pub.Publish(buf)
+			if len(buf) == 0 {
+				continue
+			}
+
+			std.pub.Publish(buf[:n])
 			buf = nil
 		}
 	}
@@ -162,23 +177,27 @@ type LineReaderService struct {
 	reader   io.Reader
 	stopped  chan struct{}
 	incoming chan []byte
+	done     chan struct{}
+	wg       sync.WaitGroup
 	rw       sync.Mutex
 	closed   bool
 }
 
 // NewLineReaderService returns a new instance of a StdOutService.
 func NewLineReaderService(buffer int, maxWaitingTime time.Duration, reader io.Reader) *LineReaderService {
-	pub := services.NewBytesDistributor(buffer, maxWaitingTime)
-	pubErr := services.NewErrorDistributor(buffer, maxWaitingTime)
+	pub := services.NewBytesDistributor(buffer)
+	pubErr := services.NewErrorDistributor(buffer)
 
 	stdServ := LineReaderService{
 		pub:      pub,
 		pubErrs:  pubErr,
 		reader:   reader,
 		stopped:  make(chan struct{}, 0),
+		done:     make(chan struct{}, 0),
 		incoming: make(chan []byte, 0),
 	}
 
+	stdServ.wg.Add(1)
 	go stdServ.runLineReader()
 
 	return &stdServ
@@ -186,7 +205,7 @@ func NewLineReaderService(buffer int, maxWaitingTime time.Duration, reader io.Re
 
 // Done returns a channel which will be closed once the service is stopped.
 func (std *LineReaderService) Done() <-chan struct{} {
-	return std.stopped
+	return std.done
 }
 
 // Stop ends all operations of the service.
@@ -200,6 +219,8 @@ func (std *LineReaderService) Stop() error {
 
 	close(std.stopped)
 
+	std.wg.Wait()
+
 	// Clear all pending subscribers.
 	std.pub.Clear()
 	std.pubErrs.Clear()
@@ -209,6 +230,7 @@ func (std *LineReaderService) Stop() error {
 	std.pubErrs.Stop()
 
 	std.closed = true
+	close(std.done)
 
 	return nil
 }
@@ -247,6 +269,8 @@ func (std *LineReaderService) ReadErrors() <-chan error {
 
 // runLineReader reads continously from the LineReader provider till io.EOF.
 func (std *LineReaderService) runLineReader() {
+	defer std.wg.Done()
+
 	lineReader := bufio.NewReader(std.reader)
 
 	t := time.NewTimer(readerCloseCheckDuration)

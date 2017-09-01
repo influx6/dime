@@ -25,45 +25,44 @@ func TestByteFunction(t *testing.T) {
 	wg.Add(1)
 
 	var in, out bytes.Buffer
-
-	proc := functions.WrapWithMetric("sit", events, func(ctx services.CancelContext, mesgs <-chan []byte, replies chan<- []byte, errReplies <-chan error) {
-		ticker := time.NewTicker(1 * time.Second)
-		defer ticker.Stop()
-
+	proc := func(ctx services.CancelContext, mesgs <-chan []byte, replies chan<- []byte, errReplies <-chan error) {
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case err, ok := <-errReplies:
 				if !ok {
-					return
+					continue
 				}
 
-				tests.Failed("Should have not received error: %+q.", err)
+				tests.Errored("Should have not received error: %+q.", err)
 			case msg, ok := <-mesgs:
 				if !ok {
+					// We are required to handle close signal ourselves
+					close(replies)
 					return
 				}
 
-				replies <- []byte(fmt.Sprintf("Hello %q\n", msg))
-			case <-ticker.C:
-				// do nothing
+				replies <- []byte(fmt.Sprintf("Hello %s", msg))
 			}
 		}
-	})
+	}
+
+	// metricProc := functions.WrapWithMetric("sit", events, proc)
 
 	ctx, cn := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cn()
 
+	in.Write([]byte("Alex"))
+
 	go func() {
 		defer wg.Done()
-		if err := functions.LaunchReaderWriterFunction(ctx, &in, &out, proc); err != nil {
+
+		if err := functions.LaunchReaderWriterFunction(ctx, 100, &in, &out, proc); err != nil {
 			tests.Failed("Should have successfully launched code into opertion: %+q", err)
 		}
 		tests.Passed("Should have successfully launched code into opertion")
 	}()
-
-	in.Write([]byte("Alex\r\n"))
 
 	wg.Wait()
 

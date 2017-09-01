@@ -1,6 +1,7 @@
 package services
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -1039,30 +1040,27 @@ func RuneCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders ..
 // to deliver will be cancelled, this ensures that we do not leak goroutines nor
 // have eternal channel blocks.
 type RuneDistributor struct {
-	running             int64
-	messages            chan rune
-	closer              chan struct{}
-	subcloser           chan struct{}
-	clear               chan struct{}
-	subscribers         []chan<- rune
-	newSub              chan chan<- rune
-	sendWaitBeforeAbort time.Duration
+	running     int64
+	messages    chan rune
+	closer      chan struct{}
+	subcloser   chan struct{}
+	clear       chan struct{}
+	receivers   sync.WaitGroup
+	subscribers []chan<- rune
+	newSub      chan chan<- rune
+	// sendWaitBeforeAbort time.Duration
+
 }
 
 // NewRuneDistributor returns a new instance of a RuneDistributor.
-func NewRuneDistributor(buffer int, sendWaitBeforeAbort time.Duration) *RuneDistributor {
-	if sendWaitBeforeAbort <= 0 {
-		sendWaitBeforeAbort = defaultSendWithBeforeAbort
-	}
-
+func NewRuneDistributor(buffer int) *RuneDistributor {
 	dist := &RuneDistributor{
-		clear:               make(chan struct{}, 0),
-		closer:              make(chan struct{}, 0),
-		subcloser:           make(chan struct{}, 0),
-		subscribers:         make([]chan<- rune, 0),
-		newSub:              make(chan chan<- rune, 0),
-		messages:            make(chan rune, buffer),
-		sendWaitBeforeAbort: sendWaitBeforeAbort,
+		clear:       make(chan struct{}, 0),
+		closer:      make(chan struct{}, 0),
+		subcloser:   make(chan struct{}, 0),
+		subscribers: make([]chan<- rune, 0),
+		newSub:      make(chan chan<- rune, 0),
+		messages:    make(chan rune, buffer),
 	}
 
 	atomic.AddInt64(&dist.running, 1)
@@ -1122,8 +1120,14 @@ func (d *RuneDistributor) Stop() {
 		return
 	}
 
-	d.subcloser <- struct{}{}
 	d.closer <- struct{}{}
+
+	d.receivers.Wait()
+
+	for _, sub := range d.subscribers {
+		close(sub)
+	}
+
 }
 
 // manage implements necessary logic to manage message delivery and
@@ -1139,12 +1143,7 @@ func (d *RuneDistributor) manage() {
 		case <-ticker.C:
 			ticker.Reset(1 * time.Second)
 			continue
-		case <-d.subcloser:
-			for _, sub := range d.subscribers {
-				close(sub)
-			}
 
-			d.subscribers = nil
 		case <-d.clear:
 			d.subscribers = nil
 
@@ -1154,25 +1153,27 @@ func (d *RuneDistributor) manage() {
 			}
 
 			d.subscribers = append(d.subscribers, newSub)
+
 		case message, ok := <-d.messages:
 			if !ok {
 				return
 			}
 
 			for _, sub := range d.subscribers {
-				go func(c chan<- rune) {
-					tick := time.NewTimer(d.sendWaitBeforeAbort)
-					defer tick.Stop()
+				d.receivers.Add(1)
 
+				go func(c chan<- rune) {
+					defer d.receivers.Done()
 					select {
-					case c <- message:
+					case <-d.subcloser:
 						return
-					case <-tick.C:
+					case c <- message:
 						return
 					}
 				}(sub)
 			}
 		case <-d.closer:
+			close(d.subcloser)
 			return
 		}
 	}

@@ -1051,28 +1051,25 @@ func {{sel "Name"}}CombineInOrder(ctx CancelContext, maxItemWait time.Duration, 
 type {{ sel "Name" }}Distributor struct {
 	running             int64
 	messages            chan {{ sel "Type" }}
-	closer               chan struct{}
-	subcloser               chan struct{}
+	closer              chan struct{}
+	subcloser           chan struct{}
 	clear               chan struct{}
+	receivers 			sync.WaitGroup
 	subscribers         []chan<- {{ sel "Type" }}
 	newSub              chan chan<- {{ sel "Type" }}
-	sendWaitBeforeAbort time.Duration
+	// sendWaitBeforeAbort time.Duration
+
 }
 
 // New{{sel "Name"}}Distributor returns a new instance of a {{ sel "Name" }}Distributor.
-func New{{sel "Name"}}Distributor(buffer int, sendWaitBeforeAbort time.Duration) *{{ sel "Name" }}Distributor {
-	if sendWaitBeforeAbort <= 0 {
-		sendWaitBeforeAbort = defaultSendWithBeforeAbort
-	}
-
+func New{{sel "Name"}}Distributor(buffer int) *{{ sel "Name" }}Distributor {
 	dist := &{{ sel "Name" }}Distributor{
 		clear:               make(chan struct{}, 0),
-		closer:               make(chan struct{}, 0),
-		subcloser:               make(chan struct{}, 0),
+		closer:              make(chan struct{}, 0),
+		subcloser:           make(chan struct{}, 0),
 		subscribers:         make([]chan<- {{ sel "Type" }}, 0),
 		newSub:              make(chan chan<- {{ sel "Type" }}, 0),
 		messages:            make(chan {{ sel "Type" }}, buffer),
-		sendWaitBeforeAbort: sendWaitBeforeAbort,
 	}
 
 	atomic.AddInt64(&dist.running, 1)
@@ -1132,8 +1129,14 @@ func (d *{{ sel "Name" }}Distributor) Stop() {
 		return
 	}
 
-	d.subcloser <- struct{}{}
 	d.closer <- struct{}{}
+
+	d.receivers.Wait()
+
+	for _, sub := range d.subscribers {
+		close(sub)
+	}
+
 }
 
 // manage implements necessary logic to manage message delivery and
@@ -1149,12 +1152,7 @@ func (d *{{ sel "Name" }}Distributor) manage() {
 		case <-ticker.C:
 			ticker.Reset(1 * time.Second)
 			continue
-		case <-d.subcloser:
-			for _, sub := range d.subscribers {
-				close(sub)
-			}
 
-			d.subscribers = nil
 		case <-d.clear:
 			d.subscribers = nil
 
@@ -1164,25 +1162,27 @@ func (d *{{ sel "Name" }}Distributor) manage() {
 			}
 
 			d.subscribers = append(d.subscribers, newSub)
+
 		case message, ok := <-d.messages:
 			if !ok {
 				return
 			}
 
 			for _, sub := range d.subscribers {
-				go func(c chan<- {{ sel "Type" }}) {
-					tick := time.NewTimer(d.sendWaitBeforeAbort)
-					defer tick.Stop()
+				d.receivers.Add(1)
 
+				go func(c chan<- {{ sel "Type" }}) {
+					defer d.receivers.Done()
 					select {
-					case c <- message:
+					case <-d.subcloser:
 						return
-					case <-tick.C:
+					case c <- message:
 						return
 					}
 				}(sub)
 			}
 		case <-d.closer:
+			close(d.subcloser)
 			return
 		}
 	}

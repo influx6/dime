@@ -1,6 +1,7 @@
 package services
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -1045,30 +1046,27 @@ func BoolSliceCombineInOrder(ctx CancelContext, maxItemWait time.Duration, sende
 // to deliver will be cancelled, this ensures that we do not leak goroutines nor
 // have eternal channel blocks.
 type BoolSliceDistributor struct {
-	running             int64
-	messages            chan []bool
-	closer              chan struct{}
-	subcloser           chan struct{}
-	clear               chan struct{}
-	subscribers         []chan<- []bool
-	newSub              chan chan<- []bool
-	sendWaitBeforeAbort time.Duration
+	running     int64
+	messages    chan []bool
+	closer      chan struct{}
+	subcloser   chan struct{}
+	clear       chan struct{}
+	receivers   sync.WaitGroup
+	subscribers []chan<- []bool
+	newSub      chan chan<- []bool
+	// sendWaitBeforeAbort time.Duration
+
 }
 
 // NewBoolSliceDistributor returns a new instance of a BoolSliceDistributor.
-func NewBoolSliceDistributor(buffer int, sendWaitBeforeAbort time.Duration) *BoolSliceDistributor {
-	if sendWaitBeforeAbort <= 0 {
-		sendWaitBeforeAbort = defaultSendWithBeforeAbort
-	}
-
+func NewBoolSliceDistributor(buffer int) *BoolSliceDistributor {
 	dist := &BoolSliceDistributor{
-		clear:               make(chan struct{}, 0),
-		closer:              make(chan struct{}, 0),
-		subcloser:           make(chan struct{}, 0),
-		subscribers:         make([]chan<- []bool, 0),
-		newSub:              make(chan chan<- []bool, 0),
-		messages:            make(chan []bool, buffer),
-		sendWaitBeforeAbort: sendWaitBeforeAbort,
+		clear:       make(chan struct{}, 0),
+		closer:      make(chan struct{}, 0),
+		subcloser:   make(chan struct{}, 0),
+		subscribers: make([]chan<- []bool, 0),
+		newSub:      make(chan chan<- []bool, 0),
+		messages:    make(chan []bool, buffer),
 	}
 
 	atomic.AddInt64(&dist.running, 1)
@@ -1128,8 +1126,14 @@ func (d *BoolSliceDistributor) Stop() {
 		return
 	}
 
-	d.subcloser <- struct{}{}
 	d.closer <- struct{}{}
+
+	d.receivers.Wait()
+
+	for _, sub := range d.subscribers {
+		close(sub)
+	}
+
 }
 
 // manage implements necessary logic to manage message delivery and
@@ -1145,12 +1149,7 @@ func (d *BoolSliceDistributor) manage() {
 		case <-ticker.C:
 			ticker.Reset(1 * time.Second)
 			continue
-		case <-d.subcloser:
-			for _, sub := range d.subscribers {
-				close(sub)
-			}
 
-			d.subscribers = nil
 		case <-d.clear:
 			d.subscribers = nil
 
@@ -1160,25 +1159,27 @@ func (d *BoolSliceDistributor) manage() {
 			}
 
 			d.subscribers = append(d.subscribers, newSub)
+
 		case message, ok := <-d.messages:
 			if !ok {
 				return
 			}
 
 			for _, sub := range d.subscribers {
-				go func(c chan<- []bool) {
-					tick := time.NewTimer(d.sendWaitBeforeAbort)
-					defer tick.Stop()
+				d.receivers.Add(1)
 
+				go func(c chan<- []bool) {
+					defer d.receivers.Done()
 					select {
-					case c <- message:
+					case <-d.subcloser:
 						return
-					case <-tick.C:
+					case c <- message:
 						return
 					}
 				}(sub)
 			}
 		case <-d.closer:
+			close(d.subcloser)
 			return
 		}
 	}

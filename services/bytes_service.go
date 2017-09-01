@@ -1,6 +1,7 @@
 package services
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -1039,30 +1040,27 @@ func BytesCombineInOrder(ctx CancelContext, maxItemWait time.Duration, senders .
 // to deliver will be cancelled, this ensures that we do not leak goroutines nor
 // have eternal channel blocks.
 type BytesDistributor struct {
-	running             int64
-	messages            chan []byte
-	closer              chan struct{}
-	subcloser           chan struct{}
-	clear               chan struct{}
-	subscribers         []chan<- []byte
-	newSub              chan chan<- []byte
-	sendWaitBeforeAbort time.Duration
+	running     int64
+	messages    chan []byte
+	closer      chan struct{}
+	subcloser   chan struct{}
+	clear       chan struct{}
+	receivers   sync.WaitGroup
+	subscribers []chan<- []byte
+	newSub      chan chan<- []byte
+	// sendWaitBeforeAbort time.Duration
+
 }
 
 // NewBytesDistributor returns a new instance of a BytesDistributor.
-func NewBytesDistributor(buffer int, sendWaitBeforeAbort time.Duration) *BytesDistributor {
-	if sendWaitBeforeAbort <= 0 {
-		sendWaitBeforeAbort = defaultSendWithBeforeAbort
-	}
-
+func NewBytesDistributor(buffer int) *BytesDistributor {
 	dist := &BytesDistributor{
-		clear:               make(chan struct{}, 0),
-		closer:              make(chan struct{}, 0),
-		subcloser:           make(chan struct{}, 0),
-		subscribers:         make([]chan<- []byte, 0),
-		newSub:              make(chan chan<- []byte, 0),
-		messages:            make(chan []byte, buffer),
-		sendWaitBeforeAbort: sendWaitBeforeAbort,
+		clear:       make(chan struct{}, 0),
+		closer:      make(chan struct{}, 0),
+		subcloser:   make(chan struct{}, 0),
+		subscribers: make([]chan<- []byte, 0),
+		newSub:      make(chan chan<- []byte, 0),
+		messages:    make(chan []byte, buffer),
 	}
 
 	atomic.AddInt64(&dist.running, 1)
@@ -1122,8 +1120,14 @@ func (d *BytesDistributor) Stop() {
 		return
 	}
 
-	d.subcloser <- struct{}{}
 	d.closer <- struct{}{}
+
+	d.receivers.Wait()
+
+	for _, sub := range d.subscribers {
+		close(sub)
+	}
+
 }
 
 // manage implements necessary logic to manage message delivery and
@@ -1139,12 +1143,7 @@ func (d *BytesDistributor) manage() {
 		case <-ticker.C:
 			ticker.Reset(1 * time.Second)
 			continue
-		case <-d.subcloser:
-			for _, sub := range d.subscribers {
-				close(sub)
-			}
 
-			d.subscribers = nil
 		case <-d.clear:
 			d.subscribers = nil
 
@@ -1154,25 +1153,27 @@ func (d *BytesDistributor) manage() {
 			}
 
 			d.subscribers = append(d.subscribers, newSub)
+
 		case message, ok := <-d.messages:
 			if !ok {
 				return
 			}
 
 			for _, sub := range d.subscribers {
-				go func(c chan<- []byte) {
-					tick := time.NewTimer(d.sendWaitBeforeAbort)
-					defer tick.Stop()
+				d.receivers.Add(1)
 
+				go func(c chan<- []byte) {
+					defer d.receivers.Done()
 					select {
-					case c <- message:
+					case <-d.subcloser:
 						return
-					case <-tick.C:
+					case c <- message:
 						return
 					}
 				}(sub)
 			}
 		case <-d.closer:
+			close(d.subcloser)
 			return
 		}
 	}
