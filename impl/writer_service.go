@@ -221,7 +221,7 @@ func NewMultiWriterService(buffer int, maxWaitingTime time.Duration, w io.Writer
 		writers:  make(chan chan []byte, 0),
 	}
 
-	stdServ.wg.Add(2)
+	stdServ.wg.Add(1)
 	go stdServ.runWriter()
 
 	return &stdServ
@@ -271,6 +271,7 @@ func (std *MultiWriterService) Read() (<-chan []byte, error) {
 
 // Write accepts a channel which data will be read from delivery data into the writer.
 func (std *MultiWriterService) Write(in <-chan []byte) error {
+	std.wg.Add(1)
 	go std.lunchPublisher(in)
 	return nil
 }
