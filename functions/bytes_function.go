@@ -100,7 +100,7 @@ func WrapWithMetric(id string, m metrics.Metrics, fx ByteFunction) ByteFunction 
 			}))
 		}, in)
 
-		outView := services.BytesSinkView(ctx, false, 100*time.Millisecond, func(sent []byte) {
+		outView := services.BytesSinkView(ctx, true, 100*time.Millisecond, func(sent []byte) {
 			m.Emit(metrics.WithFields(metrics.Fields{
 				"id":          id,
 				"executionId": executionCount,
@@ -109,8 +109,6 @@ func WrapWithMetric(id string, m metrics.Metrics, fx ByteFunction) ByteFunction 
 				"data":        sent,
 			}))
 		}, out)
-
-		defer close(outView)
 
 		errView := services.ErrorView(ctx, 100*time.Millisecond, func(whyErr error) {
 			m.Emit(metrics.WithFields(metrics.Fields{

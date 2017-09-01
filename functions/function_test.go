@@ -48,7 +48,7 @@ func TestByteFunction(t *testing.T) {
 		}
 	}
 
-	// metricProc := functions.WrapWithMetric("sit", events, proc)
+	metricProc := functions.WrapWithMetric("sit", events, proc)
 
 	ctx, cn := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cn()
@@ -58,7 +58,7 @@ func TestByteFunction(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		if err := functions.LaunchReaderWriterFunction(ctx, 100, &in, &out, proc); err != nil {
+		if err := functions.LaunchReaderWriterFunction(ctx, 100, &in, &out, metricProc); err != nil {
 			tests.Failed("Should have successfully launched code into opertion: %+q", err)
 		}
 		tests.Passed("Should have successfully launched code into opertion")
