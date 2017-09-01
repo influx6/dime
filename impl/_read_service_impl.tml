@@ -1,6 +1,7 @@
 
 import (
 	"time"
+	"sync"
 	"github.com/influx6/dime/services"
 )
 
@@ -8,32 +9,29 @@ import (
 // {{sel "Name"}} implements a dime.MonoByteService for reading from os.Stdin and writing to os.Stdout.
 // It allows us expose the stdout as a stream of continouse bytes to be read and written to.
 type {{sel "Name"}} struct {
-	pub     *services.BytesDistributor
-	pubErrs *services.ErrorDistributor
-
-	stopped  chan struct{}
-	incoming chan {{sel "Type"}}
-	writers  chan chan {{sel "Type"}}
+	pub         *services.BytesDistributor
+	pubErrs     *services.ErrorDistributor
+	maxBuffSize int
+	stopped     chan struct{}
+	incoming    chan {{sel "Type"}}
+	rw          sync.Mutex
+	closed      bool
 }
 
 // New{{sel "Name"}} returns a new instance of a StdOutService.
-func New{{sel "Name"}}(buffer int, maxWaitingTime time.Duration) *{{sel "Name"}} {
-	pub := services.NewBytesDistributor(buffer, maxWaitingTime)
-	pubErr := services.NewErrorDistributor(buffer, maxWaitingTime)
-
-	defer pubErr.Start()
-	defer pub.Start()
+func New{{sel "Name"}}(maxReadBufferSize int, maxWaitingTime time.Duration) *{{sel "Name"}} {
+	pub := services.NewBytesDistributor(0, maxWaitingTime)
+	pubErr := services.NewErrorDistributor(0, maxWaitingTime)
 
 	stdServ := {{sel "Name"}}{
-		pub:      pub,
-		pubErrs:  pubErr,
-		stopped:  make(chan struct{}, 0),
-		incoming: make(chan {{sel "Type"}}, 0),
-		writers:  make(chan chan {{sel "Type"}}, 0),
+		pub:         pub,
+		pubErrs:     pubErr,
+		maxBuffSize: maxReadBufferSize,
+		stopped:     make(chan struct{}, 0),
+		incoming:    make(chan {{sel "Type"}}, 0),
 	}
 
 	go stdServ.runReader()
-	go stdServ.runWriter()
 
 	return &stdServ
 }
@@ -45,49 +43,27 @@ func (std *{{sel "Name"}}) Done() <-chan struct{} {
 
 // Stop ends all operations of the service.
 func (std *{{sel "Name"}}) Stop() error {
+	std.rw.Lock()
+	defer std.rw.Unlock()
+
+	if std.closed {
+		return nil
+	}
+
 	close(std.stopped)
-
-	// Close all subscribers.
-	std.pub.CloseAllSubs()
-	std.pubErrs.CloseAllSubs()
-
-	// Clear all subscribers.
-	std.pub.Clear()
-	std.pubErrs.Clear()
 
 	// Stop subscription delivery.
 	std.pub.Stop()
 	std.pubErrs.Stop()
+
+	std.closed = true
 
 	return nil
 }
 
 // Write accepts a channel which data will be read from delivery data into the writer.
 func (std *{{sel "Name"}}) Write(in <-chan {{sel "Type"}}) error {
-	go std.lunchPublisher(in)
-	return nil
-}
-
-// launches a go-routine to write data into publisher.
-func (std *{{sel "Name"}}) lunchPublisher(in <-chan {{sel "Type"}}) {
-	t := time.NewTimer(writerWaitDuration)
-	defer t.Stop()
-
-	for {
-		select {
-		case <-std.stopped:
-			return
-		case data, ok := <-in:
-			if !ok {
-				return
-			}
-
-			std.incoming <- data
-		case <-t.C:
-			t.Reset(writerWaitDuration)
-			continue
-		}
-	}
+	return ErrNotSupported
 }
 
 // ReadErrors returns a channel for reading error information to a listener.
@@ -110,13 +86,13 @@ func (std *{{sel "Name"}}) Read() (<-chan {{sel "Type"}}, error) {
 
 // runReader reads continously from the reader provider till io.EOF.
 func (std *{{sel "Name"}}) runReader() {
+	reader := bufio.NewReader(std.reader)
+
 	t := time.NewTimer(readerCloseCheckDuration)
 	defer t.Stop()
 
-
 	{
 		for {
-
 			// Validate that service has not be closed:
 			select {
 			case <-std.stopped:
@@ -126,23 +102,12 @@ func (std *{{sel "Name"}}) runReader() {
 				break
 			}
 
-		}
-	}
-}
+			buf := make({{sel "Type"}}, std.maxBuffSize)
 
-// runWriter handles the internal processing of  writing data into provided writer.
-func (std *{{sel "Name"}}) runWriter() {
-	{
-		for {
-			select {
-			case <-std.stopped:
-				return
-			case data, ok := <-std.incoming:
-				if !ok {
-					return
-				}
+			// Add implementation details
 
-			}
+			std.pub.Publish(buf)
+			buf = nil
 		}
 	}
 }

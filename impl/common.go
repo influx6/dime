@@ -14,5 +14,6 @@ var (
 
 // errors
 var (
-	ErrNotSupported = errors.New("Not Supported")
+	ErrNotSupported                    = errors.New("Not Supported")
+	ErrOnlySingleWriteChannelSupported = errors.New("Only Single Write Channel Supported/Allowed")
 )

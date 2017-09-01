@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/influx6/dime/services"
@@ -38,6 +39,8 @@ type ReaderService struct {
 	maxBuffSize int
 	stopped     chan struct{}
 	incoming    chan []byte
+	rw          sync.Mutex
+	closed      bool
 }
 
 // NewReaderService returns a new instance of a StdOutService.
@@ -66,11 +69,20 @@ func (std *ReaderService) Done() <-chan struct{} {
 
 // Stop ends all operations of the service.
 func (std *ReaderService) Stop() error {
+	std.rw.Lock()
+	defer std.rw.Unlock()
+
+	if std.closed {
+		return nil
+	}
+
 	close(std.stopped)
 
 	// Stop subscription delivery.
 	std.pub.Stop()
 	std.pubErrs.Stop()
+
+	std.closed = true
 
 	return nil
 }
@@ -150,6 +162,8 @@ type LineReaderService struct {
 	reader   io.Reader
 	stopped  chan struct{}
 	incoming chan []byte
+	rw       sync.Mutex
+	closed   bool
 }
 
 // NewLineReaderService returns a new instance of a StdOutService.
@@ -177,10 +191,14 @@ func (std *LineReaderService) Done() <-chan struct{} {
 
 // Stop ends all operations of the service.
 func (std *LineReaderService) Stop() error {
-	close(std.stopped)
+	std.rw.Lock()
+	defer std.rw.Unlock()
 
-	std.pub.CloseAllSubs()
-	std.pubErrs.CloseAllSubs()
+	if std.closed {
+		return nil
+	}
+
+	close(std.stopped)
 
 	// Clear all pending subscribers.
 	std.pub.Clear()
@@ -189,6 +207,8 @@ func (std *LineReaderService) Stop() error {
 	// Stop subscription delivery.
 	std.pub.Stop()
 	std.pubErrs.Stop()
+
+	std.closed = true
 
 	return nil
 }
@@ -214,6 +234,15 @@ func (std *LineReaderService) Read() (<-chan []byte, error) {
 	std.pub.Subscribe(mc)
 
 	return mc, nil
+}
+
+// ReadErrors returns a channel for reading error information to a listener.
+func (std *LineReaderService) ReadErrors() <-chan error {
+	mc := make(chan error, 10)
+
+	std.pubErrs.Subscribe(mc)
+
+	return mc
 }
 
 // runLineReader reads continously from the LineReader provider till io.EOF.
